@@ -1,8 +1,13 @@
+// File: app/components/UserHeader.tsx
 "use client";
 import { useState } from "react";
 import NotificationDropdown from "./Notification_Dropdown";
 
-export default function UserHeader({ name }) {
+interface UserHeaderProps {
+  name: string;
+}
+
+export default function UserHeader({ name }: UserHeaderProps) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   const toggleNotification = () => {
@@ -24,7 +29,9 @@ export default function UserHeader({ name }) {
           <h2 className="font-bold text-black text-xl lg:text-2xl">{name}</h2>
         </div>
       </div>
-      <div className="flex items-center">
+      <div className="flex items-center relative">
+        {" "}
+        {/* Add relative here */}
         <button
           className="p-2 hover:bg-gray-400 text-black rounded-full transition-colors lg:mr-2"
           onClick={toggleNotification}
@@ -45,7 +52,7 @@ export default function UserHeader({ name }) {
           </svg>
         </button>
         {/* Notification dropdown*/}
-
+        <NotificationDropdown isNotificationOpen={isNotificationOpen} />
         <button className="hidden lg:block p-2 hover:bg-gray-400 text-black rounded-full transition-colors">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -63,7 +70,6 @@ export default function UserHeader({ name }) {
           </svg>
         </button>
       </div>
-      {/*Notification  Dropdown*/}
     </header>
   );
 }

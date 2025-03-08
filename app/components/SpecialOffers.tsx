@@ -73,7 +73,7 @@ export default function SpecialOffers() {
               <div className="text-5xl font-bold mb-1 lg:text-6xl">
                 {slides[activeSlide].discount}
               </div>
-              <h3 className="text-xl font-bold mb-1 lg:text-2xl">
+              <h3 className="text-lg font-bold mb-1 lg:text-2xl">
                 {slides[activeSlide].title}
               </h3>
               <p className="text-sm opacity-90 lg:text-base whitespace-pre-line">

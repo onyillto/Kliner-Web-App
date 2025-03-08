@@ -1,5 +1,5 @@
 // File: app/page.tsx
-"use client"
+"use client";
 import UserHeader from "./components/UserHeader";
 import SearchBar from "./components/SearchBar";
 import SpecialOffers from "./components/SpecialOffers";
@@ -8,22 +8,15 @@ import ServiceItem from "./components/ServiceItem";
 import BottomNavigation from "./components/BottomNavigation";
 import DesktopSidebar from "./components/DesktopSidebar";
 import ProgressBar from "./components/ProgressBar";
-import NotificationDropdown from "./components/Notification_Dropdown";
 import { useState } from "react";
 
 export default function Home() {
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-
-  const toggleNotification = () => {
-    setIsNotificationOpen(!isNotificationOpen);
-  };
   return (
     <div className="bg-gray-50 min-h-screen relative">
       <main className="max-w-6xl mx-auto bg-white min-h-screen shadow-lg pb-16 lg:pl-16">
         <div className="max-w-md mx-auto lg:max-w-full lg:px-8">
           {/* User Header */}
           <UserHeader name="Daniel" />
-          <NotificationDropdown isNotificationOpen={isNotificationOpen} />
           {/* Desktop Progress Bar - Only visible on lg+ screens */}
           <div className="px-4 my-4 hidden lg:block">
             <ProgressBar />

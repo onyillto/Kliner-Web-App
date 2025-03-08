@@ -29,7 +29,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     <div
       className={`flex items-center justify-center ${bgColor} text-white w-12 h-12 rounded-full mr-3 relative`}
     >
-      <span className="text-xl">{icon}</span>
+      <span className="text-xl lg:text-2lg">{icon}</span>
       <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-pink-500"></div>
       <div className="absolute top-1 -left-1 w-2 h-2 rounded-full bg-indigo-300 opacity-70"></div>
       <div className="absolute -bottom-1 -right-1 w-2 h-2 rounded-full bg-indigo-300 opacity-70"></div>
