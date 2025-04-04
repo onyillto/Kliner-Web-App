@@ -104,7 +104,7 @@ export default function ServiceCategories() {
           {categories.map((category) => (
             <div
               key={category.name}
-              className="flex flex-col text-grey-800 items-center hover:opacity-80 transition-opacity cursor-pointer mr-6 w-20"
+              className="flex flex-col text-black items-center  transition-opacity cursor-pointer mr-6 w-20"
               onClick={() => handleCategoryClick(category)}
             >
               <div
@@ -112,7 +112,7 @@ export default function ServiceCategories() {
               >
                 <span>{category.icon}</span>
               </div>
-              <span className="text-sm text-center whitespace-nowrap">
+              <span className="text-sm text-center whitespace-nowrap text-black">
                 {category.name}
               </span>
             </div>
@@ -125,7 +125,7 @@ export default function ServiceCategories() {
         {categories.map((category) => (
           <div
             key={category.name}
-            className="flex flex-col text-black sm:text-black items-center hover:opacity-80 transition-opacity cursor-pointer"
+            className="flex flex-col text-black sm:text-black items-center  transition-opacity cursor-pointer"
             onClick={() => handleCategoryClick(category)}
           >
             <div
@@ -133,7 +133,7 @@ export default function ServiceCategories() {
             >
               <span>{category.icon}</span>
             </div>
-            <span className="text-base">{category.name}</span>
+            <span className="text-base text-black">{category.name}</span>
           </div>
         ))}
       </div>

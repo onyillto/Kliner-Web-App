@@ -21,7 +21,10 @@ export default function BottomNavigation() {
           <span className="text-xs mt-1">Home</span>
         </a>
 
-        <a href="#" className="flex flex-col items-center text-gray-400">
+        <a
+          href="/bookings/bookings"
+          className="flex flex-col items-center text-gray-400"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -39,7 +42,10 @@ export default function BottomNavigation() {
           <span className="text-xs mt-1">Bookings</span>
         </a>
 
-        <a href="#" className="flex flex-col items-center text-gray-400">
+        <a
+          href="/booking/user-chat"
+          className="flex flex-col items-center text-gray-400"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -56,7 +62,10 @@ export default function BottomNavigation() {
           <span className="text-xs mt-1">Chat</span>
         </a>
 
-        <a href="#" className="flex flex-col items-center text-gray-400">
+        <a
+          href="/booking/user-chat"
+          className="flex flex-col items-center text-gray-400"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -117,7 +126,7 @@ export default function BottomNavigation() {
             </a>
 
             <a
-              href="#"
+              href="/booking/bookings"
               className="p-2 rounded-lg hover:bg-gray-100 text-gray-500"
             >
               <svg
@@ -137,7 +146,7 @@ export default function BottomNavigation() {
             </a>
 
             <a
-              href="#"
+              href="/booking/user-chat"
               className="p-2 rounded-lg hover:bg-gray-100 text-gray-500"
             >
               <svg
@@ -178,7 +187,7 @@ export default function BottomNavigation() {
 
           <div className="mt-auto mb-8">
             <a
-              href="#"
+              href="profile"
               className="p-2 rounded-lg hover:bg-gray-100 text-gray-500"
             >
               <svg

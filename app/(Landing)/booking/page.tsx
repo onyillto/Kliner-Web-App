@@ -209,7 +209,10 @@ export default function BookingPage() {
         </main>
 
         <div className="fixed bottom-0 left-0 right-0 bg-white p-4 flex gap-4 shadow-lg">
-          <button className="flex-1 border border-indigo-600 text-indigo-600 py-3 rounded-lg font-medium">
+          <button
+            onClick={() => router.push("/booking/user-chat")}
+            className="flex-1 border border-indigo-600 text-indigo-600 py-3 rounded-lg font-medium"
+          >
             Message
           </button>
           <button
