@@ -2,12 +2,14 @@
 import { useState, useEffect } from "react";
 import { FaFacebook, FaGoogle } from "react-icons/fa";
 import { Eye, EyeOff } from "lucide-react";
-
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 export default function LoginPage() {
   const [usernameOrEmail, setUsernameOrEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+const router = useRouter();
 
   const images = ["/hero-slid.png", "/hero-slide.png", "/hero-slidee.png"];
 
@@ -18,10 +20,13 @@ export default function LoginPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    console.log("Login submitted", { usernameOrEmail, password });
-  };
+ const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
+   e.preventDefault();
+   console.log("Login submitted", { usernameOrEmail, password });
+
+   // After successful authentication:
+   router.push("/");
+ };
 
   return (
     <div className="flex h-[100vh] w-screen">
@@ -164,7 +169,7 @@ export default function LoginPage() {
             </div>
             <button
               type="submit"
-              className="w-[90%] max-w-[440px] sm:w-full bg-white border bg-[#3310C2] border border-[#3310C2] text-lg text-[#ffff] text-sm sm:text-[18px] py-2 rounded-lg mx-auto block"
+              className="w-[90%] max-w-[440px] sm:w-full bg-white border bg-[#3310C2] border border-[#3310C2] text-lg text-[#000000] hover:bg-[#3310C2] hover:text-white text-sm sm:text-[18px] py-2 rounded-lg mx-auto block"
             >
               Login
             </button>

@@ -24,7 +24,7 @@
     ".next/types/**/*.ts",
     "**/*.ts",
     "**/*.tsx",
-    "app/(auth)/signin/page.tsx",
+    "app/(auth)/auth/signin/page.tsx",
     "app/(auth)/change-password"
   ],
   "exclude": ["node_modules"]

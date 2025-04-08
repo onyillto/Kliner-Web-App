@@ -27,12 +27,7 @@ export default function ServiceCategories() {
       description:
         "Wash, dry, and fold laundry services with eco-friendly options available.",
       mainImage: "/images/laundry-service.jpg",
-      images: [
-        "/public/room1.svg",
-        "/public/room1.svg",
-        "/public/room1.svg",
-
-      ],
+      images: ["/public/room1.svg", "/public/room1.svg", "/public/room1.svg"],
     },
     {
       name: "Moving",
@@ -61,10 +56,10 @@ export default function ServiceCategories() {
       description: "Garden maintenance, lawn care, and plant care services.",
       mainImage: "/images/gardening-service.jpg",
       images: [
-        "/images/gardening-1.jpg",
-        "/images/gardening-2.jpg",
-        "/images/gardening-3.jpg",
-        "/images/gardening-4.jpg",
+        "/images/moving-1.jpg",
+        "/images/moving-2.jpg",
+        "/images/moving-3.jpg",
+        "/images/moving-4.jpg",
       ],
     },
     {

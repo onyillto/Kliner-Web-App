@@ -25,7 +25,7 @@ export default function BookingPage() {
     cleaning: ["/cleaning3.jpg", "/cleaning2.jpg"],
     gardening: ["/gardening1.svg", "/gardening2.svg"],
     repairs: ["/repairs1.svg", "/repairs2.svg"],
-    "move-out": ["/move-out1.svg", "/move-out2.svg"],
+    moving: ["/move-out1.svg", "/move-out2.svg"],
   };
 
   useEffect(() => {
@@ -64,9 +64,9 @@ export default function BookingPage() {
     const serviceRoutes = {
       laundry: "/booking/laundry",
       cleaning: "/booking/house-cleaning",
-      gardening: "/booking/gardening",
+      gardening: "/booking/gardning",
       repairs: "/booking/repairs",
-      "move-out": "/booking/move-out",
+      moving: "/booking/moving",
     };
     const routePath =
       serviceRoutes[serviceName] || `/${serviceName.replace(/\s+/g, "-")}`;
@@ -145,7 +145,7 @@ export default function BookingPage() {
                 loading="lazy"
                 onError={(e) => {
                   const img = e.target as HTMLImageElement;
-                  img.src = "/default-service.svg"; // Fallback image
+
                 }}
               />
             </div>
@@ -193,7 +193,7 @@ export default function BookingPage() {
                       loading="lazy"
                       onError={(e) => {
                         const img = e.target as HTMLImageElement;
-                        img.src = "/default-gallery.svg"; // Fallback for gallery
+                        
                       }}
                     />
                   </div>
@@ -226,3 +226,4 @@ export default function BookingPage() {
     </>
   );
 }
+22423830327

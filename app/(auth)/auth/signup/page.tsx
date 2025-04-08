@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"; // Import useRouter
 import Link from "next/link";
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
-    username: "",
+    
     email: "",
     password: "",
     confirmPassword: "",
@@ -27,6 +27,40 @@ export default function SignUpPage() {
   }, []);
 
   const handleSignUp = (e: React.FormEvent<HTMLFormElement>) => {
+    // In your SignUpPage component, replace the handleSignUp function with this implementation:
+
+    const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+
+      try {
+        const response = await fetch("/api/v1/auth/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+            confirmPassword: formData.confirmPassword,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          console.log("Registration successful:", data);
+          // Store email in localStorage to use on OTP verification page
+          localStorage.setItem("verification_email", formData.email);
+          router.push("/verify-otp");
+        } else {
+          // Handle registration failure
+          alert(data.message || "Registration failed. Please try again.");
+        }
+      } catch (error) {
+        console.error("Registration error:", error);
+        alert("An error occurred during registration. Please try again.");
+      }
+    };
     e.preventDefault();
     console.log("Signup submitted", formData);
     router.push("/verify-otp");
@@ -115,18 +149,8 @@ export default function SignUpPage() {
 
           <form onSubmit={handleSignUp}>
             <div className="space-y-3 sm:space-y-4">
-              {/* Username Field */}
-              <div className="relative w-[90%] max-w-[440px] sm:w-full mx-auto">
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  className="w-full p-2 pr-10 text-sm sm:text-base text-black border border-gray-300 rounded-lg focus:border-blue-500 outline-none placeholder-black"
-                  placeholder="Username"
-                  required
-                />
-              </div>
+
+
 
               {/* Email Field */}
               <div className="relative w-[90%] max-w-[440px] sm:w-full mx-auto">
