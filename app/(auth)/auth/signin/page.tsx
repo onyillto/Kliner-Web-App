@@ -1,15 +1,22 @@
 "use client";
 import { useState, useEffect } from "react";
 import { FaFacebook, FaGoogle } from "react-icons/fa";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import AuthService from "../../../../services/authService";
+
 export default function LoginPage() {
-  const [usernameOrEmail, setUsernameOrEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const [showPassword, setShowPassword] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
-const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  const router = useRouter();
 
   const images = ["/hero-slid.png", "/hero-slide.png", "/hero-slidee.png"];
 
@@ -20,13 +27,44 @@ const router = useRouter();
     return () => clearInterval(interval);
   }, []);
 
- const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
-   e.preventDefault();
-   console.log("Login submitted", { usernameOrEmail, password });
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
-   // After successful authentication:
-   router.push("/");
- };
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    try {
+      const response = await AuthService.login(
+        formData.email,
+        formData.password
+      );
+
+      if (response.success) {
+        // Navigate to dashboard or home page after successful login
+        router.push("/");
+      } else {
+        setError(
+          response.error ||
+            response.message ||
+            "Login failed. Please check your credentials."
+        );
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setError(
+        error.message || "An error occurred during login. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex h-[100vh] w-screen">
@@ -68,51 +106,48 @@ const router = useRouter();
           {/* Logo */}
           <div className="flex justify-center mb-4 sm:mb-6">
             <img
-              src="/klin-logo.png" // Replace with your logo path
+              src="/klin-logo.png"
               alt="Logo"
-              className="w-16 h-16 sm:w-24 sm:h-24" // Adjust size as needed
+              className="w-16 h-16 sm:w-24 sm:h-24"
             />
           </div>
 
-          <h1
-            className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center"
-            style={{ color: "#1E1E1E" }}
-          >
+          <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center text-[#1E1E1E]">
             Welcome to Klinners.co
           </h1>
-          <p
-            className="text-sm sm:text-base text-center mb-4"
-            style={{ color: "#373737B2" }}
-          >
+          <p className="text-sm sm:text-base text-center mb-4 text-[#373737B2]">
             Continue with Facebook or enter your account
           </p>
+
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 w-[90%] max-w-[440px] mx-auto">
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
+
           <div className="space-y-2">
             <button
               className="w-[90%] max-w-[440px] sm:w-[80%] md:w-[440px] h-12 sm:h-[52px] bg-white py-1 sm:py-2 rounded flex items-center justify-center mx-auto"
-              style={{ border: "1px solid black", color: "white" }}
+              style={{ border: "1px solid black" }}
+              disabled={isLoading}
             >
               <FaFacebook className="mr-2" style={{ color: "#1877F2" }} />
-              <span style={{ color: "#1E1E1EB2" }}>Login with Facebook</span>
+              <span className="text-[#1E1E1EB2]">Login with Facebook</span>
             </button>
 
             <button
-              className="w-[90%] max-w-[440px] sm:w-[80%] md:w-[440px] h-12 sm:h-[52px] bg-white text-white py-1 sm:py-2 rounded flex items-center justify-center mx-auto"
+              className="w-[90%] max-w-[440px] sm:w-[80%] md:w-[440px] h-12 sm:h-[52px] bg-white py-1 sm:py-2 rounded flex items-center justify-center mx-auto"
               style={{ border: "1px solid black" }}
+              disabled={isLoading}
             >
               <FaGoogle className="mr-2" style={{ color: "#DB4437" }} />
-              <span style={{ color: "#1E1E1EB2" }}>Login with Google</span>
+              <span className="text-[#1E1E1EB2]">Login with Google</span>
             </button>
           </div>
-          <div
-            className="option-two"
-            style={{ width: "440px", height: "58px" }}
-          ></div>
-          <div className="flex items-center justify-center space-x-2 sm:space-x-4">
+
+          <div className="flex items-center justify-center space-x-2 sm:space-x-4 my-4">
             <div className="w-16 sm:w-[108px] border-t border-black"></div>
-            <p
-              className="text-sm sm:text-base text-center"
-              style={{ color: "#373737" }}
-            >
+            <p className="text-sm sm:text-base text-center text-[#373737]">
               Or login with your account
             </p>
             <div className="w-16 sm:w-[108px] border-t border-black"></div>
@@ -120,32 +155,37 @@ const router = useRouter();
 
           <form onSubmit={handleLogin}>
             <div className="space-y-3 sm:space-y-4">
-              {/* Username or Email Field */}
+              {/* Email Field */}
               <div className="relative w-[90%] max-w-[440px] sm:w-full mx-auto">
                 <input
-                  type="text"
-                  value={usernameOrEmail}
-                  onChange={(e) => setUsernameOrEmail(e.target.value)}
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
                   className="w-full p-2 pr-10 text-sm sm:text-base text-black border border-gray-300 rounded-lg focus:border-blue-500 outline-none placeholder-black"
-                  placeholder="Username or Email"
+                  placeholder="Email"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
               {/* Password Field */}
               <div className="relative w-[90%] max-w-[440px] sm:w-full mx-auto">
                 <input
-                  type={showPassword ? "text" : "password"} // Toggle between text and password
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
                   className="w-full p-2 pr-10 text-sm sm:text-base text-black border border-gray-300 rounded-lg focus:border-blue-500 outline-none placeholder-black"
                   placeholder="Password"
                   required
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                  disabled={isLoading}
                 >
                   {showPassword ? (
                     <EyeOff className="text-gray-500 w-5 h-5" />
@@ -155,42 +195,55 @@ const router = useRouter();
                 </button>
               </div>
             </div>
+
             <div className="flex justify-between items-center mb-3 sm:mb-4 w-[90%] max-w-[440px] sm:w-full mx-auto">
               <label className="flex items-center text-sm sm:text-base text-[#000000]">
-                <input type="checkbox" className="mr-2" />
+                <input
+                  type="checkbox"
+                  className="mr-2"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  disabled={isLoading}
+                />
                 Remember me
               </label>
-              <a
-                href="/forget-password"
+              <Link
+                href="/auth/forget-password"
                 className="text-sm sm:text-base text-[#00438F]"
               >
                 Recovery Password?
-              </a>
+              </Link>
             </div>
+
             <button
               type="submit"
-              className="w-[90%] max-w-[440px] sm:w-full bg-white border bg-[#3310C2] border border-[#3310C2] text-lg text-[#000000] hover:bg-[#3310C2] hover:text-white text-sm sm:text-[18px] py-2 rounded-lg mx-auto block"
+              className="w-[90%] max-w-[440px] sm:w-full bg-[#3310C2] text-white text-sm sm:text-[18px] py-2 rounded-lg mx-auto block flex items-center justify-center"
+              disabled={isLoading}
             >
-              Login
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Logging in...
+                </>
+              ) : (
+                "Login"
+              )}
             </button>
           </form>
+
           <p className="text-sm sm:text-base text-center mt-4 sm:mt-6 mb-3 sm:mb-4 font-semibold text-[#1E1E1E]">
             Join with us?{" "}
-            <a href="/signup" className="text-blue-500">
-              Create account it’s free
-            </a>
+            <Link href="/auth/signup" className="text-blue-500">
+              Create account it's free
+            </Link>
           </p>
 
           <div>
             <p className="text-xs sm:text-sm text-[#A9B4CD] w-[90%] max-w-[440px] sm:w-full mx-auto">
               By continuing, you agree to NGservice{" "}
-              <span className="text-[#000000]" style={{ fontWeight: "500" }}>
-                Term of Use
-              </span>{" "}
+              <span className="text-[#000000] font-medium">Term of Use</span>{" "}
               and confirm that you have read{" "}
-              <span className="text-[#000000]" style={{ fontWeight: "500" }}>
-                Privacy Policy
-              </span>
+              <span className="text-[#000000] font-medium">Privacy Policy</span>
             </p>
           </div>
         </div>

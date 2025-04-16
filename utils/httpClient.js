@@ -1,7 +1,8 @@
 // utils/httpClient.js
 import axios from "axios";
+import { TokenService, isAuthenticated, getCurrentUser } from "./tokenService";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
 
 // Create a custom axios instance
 const httpClient = axios.create({
@@ -11,48 +12,6 @@ const httpClient = axios.create({
   },
   timeout: 30000, // 30 second timeout
 });
-
-// Storage helpers to manage the token
-const TokenService = {
-  getToken: () => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("auth_token");
-    }
-    return null;
-  },
-
-  saveToken: (token) => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("auth_token", token);
-    }
-  },
-
-  removeToken: () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("auth_token");
-    }
-  },
-
-  getUserData: () => {
-    if (typeof window !== "undefined") {
-      const userData = localStorage.getItem("user_data");
-      return userData ? JSON.parse(userData) : null;
-    }
-    return null;
-  },
-
-  saveUserData: (userData) => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("user_data", JSON.stringify(userData));
-    }
-  },
-
-  removeUserData: () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("user_data");
-    }
-  },
-};
 
 // Request interceptor for adding the auth token
 httpClient.interceptors.request.use(
@@ -102,50 +61,41 @@ httpClient.interceptors.response.use(
   }
 );
 
-// API wrapper functions
+// Helper to standardize error handling
+const handleApiError = (error) => {
+  // Create a standardized error object
+  const apiError = {
+    status: error.response?.status || 500,
+    message: "Something went wrong",
+    data: null,
+  };
+
+  // Use the error message from the API if available
+  if (error.response?.data) {
+    apiError.message =
+      error.response.data.error ||
+      error.response.data.message ||
+      apiError.message;
+    apiError.data = error.response.data.data || null;
+  }
+
+  // Network errors
+  if (error.message === "Network Error") {
+    apiError.message =
+      "Unable to connect to the server. Please check your internet connection.";
+  }
+
+  // Timeout errors
+  if (error.code === "ECONNABORTED") {
+    apiError.message =
+      "The request took too long to complete. Please try again.";
+  }
+
+  return apiError;
+};
+
+// API wrapper functions for generic CRUD operations
 const API = {
-  // Authentication methods
-  login: async (email, password) => {
-    try {
-      const response = await httpClient.post("/auth/login", {
-        email,
-        password,
-      });
-
-      // Handle the login response with your specific structure
-      if (response.data.success && response.data.data) {
-        const { token, ...userData } = response.data.data;
-
-        // Save the token and user data
-        TokenService.saveToken(token);
-        TokenService.saveUserData(userData);
-
-        return response.data;
-      }
-
-      return response.data;
-    } catch (error) {
-      throw handleApiError(error);
-    }
-  },
-
-  register: async (userData) => {
-    try {
-      const response = await httpClient.post("/auth/register", userData);
-      return response.data;
-    } catch (error) {
-      throw handleApiError(error);
-    }
-  },
-
-  logout: () => {
-    TokenService.removeToken();
-    TokenService.removeUserData();
-
-    // Optionally call logout API endpoint
-    // return httpClient.post('/auth/logout');
-  },
-
   // Generic CRUD methods
   get: async (url, params = {}) => {
     try {
@@ -206,43 +156,6 @@ const API = {
   },
 };
 
-// Helper to standardize error handling
-const handleApiError = (error) => {
-  // Create a standardized error object
-  const apiError = {
-    status: error.response?.status || 500,
-    message: "Something went wrong",
-    data: null,
-  };
-
-  // Use the error message from the API if available
-  if (error.response?.data) {
-    apiError.message = error.response.data.message || apiError.message;
-    apiError.data = error.response.data.data || null;
-  }
-
-  // Network errors
-  if (error.message === "Network Error") {
-    apiError.message =
-      "Unable to connect to the server. Please check your internet connection.";
-  }
-
-  // Timeout errors
-  if (error.code === "ECONNABORTED") {
-    apiError.message =
-      "The request took too long to complete. Please try again.";
-  }
-
-  return apiError;
-};
-
-// Auth status checking
-export const isAuthenticated = () => {
-  return !!TokenService.getToken();
-};
-
-export const getCurrentUser = () => {
-  return TokenService.getUserData();
-};
-
+// Re-export the authentication helper functions for backward compatibility
+export { httpClient, handleApiError, isAuthenticated, getCurrentUser };
 export default API;

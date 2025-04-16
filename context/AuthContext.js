@@ -1,103 +1,87 @@
-// context/AuthContext.js
-"use client"
-import { createContext, useContext, useState, useEffect } from "react";
-import Router from "next/router";
-import API, { isAuthenticated, getCurrentUser } from "../utils/httpClient";
+"use client";
 
-// Create the auth context
-const AuthContext = createContext({
-  isAuthenticated: false,
-  user: null,
-  login: async () => {},
-  logout: () => {},
-  register: async () => {},
-  loading: false,
-  error: null,
-});
+import React, { createContext, useState, useContext, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import AuthService from "@/services/authService";
+import { isAuthenticated, getCurrentUser } from "../utils/tokenService";
 
-// Auth Provider component
-export const AuthProvider = ({ children }) => {
+// Create the context
+const AuthContext = createContext();
+
+// AuthProvider component that wraps our app and makes auth available to all components
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const router = useRouter();
 
-  // Check if the user is authenticated on initial load
+  // Check if user is authenticated on mount
   useEffect(() => {
-    // If we're in the browser
-    if (typeof window !== "undefined") {
-      // Check if a user is already logged in
-      if (isAuthenticated()) {
-        setUser(getCurrentUser());
+    const initAuth = async () => {
+      setLoading(true);
+
+      if (typeof window !== "undefined") {
+        // Check if a user is already logged in
+        if (isAuthenticated()) {
+          setUser(getCurrentUser());
+        }
+        setLoading(false);
       }
-      setLoading(false);
-    }
+    };
+
+    initAuth();
   }, []);
 
-  // Login function
+  // Login function that will be passed to components
   const login = async (email, password) => {
-    setLoading(true);
-    setError(null);
-
     try {
-      const response = await API.login(email, password);
+      const response = await AuthService.login(email, password);
 
       if (response.success) {
-        setUser(response.data);
-        return { success: true, data: response.data };
+        setUser(getCurrentUser());
+        return { success: true };
       } else {
-        setError(response.message || "Login failed");
-        return { success: false, message: response.message };
+        return { success: false, message: response.error || "Login failed" };
       }
-    } catch (err) {
-      setError(err.message || "Login failed");
-      return { success: false, message: err.message };
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || "An error occurred during login",
+      };
     }
   };
 
   // Register function
   const register = async (userData) => {
-    setLoading(true);
-    setError(null);
-
     try {
-      const response = await API.register(userData);
-
-      if (response.success) {
-        return { success: true, data: response.data };
-      } else {
-        setError(response.message || "Registration failed");
-        return { success: false, message: response.message };
-      }
-    } catch (err) {
-      setError(err.message || "Registration failed");
-      return { success: false, message: err.message };
-    } finally {
-      setLoading(false);
+      const response = await AuthService.register(userData);
+      return response;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || "Registration failed",
+      };
     }
   };
 
   // Logout function
   const logout = () => {
-    API.logout();
+    AuthService.logout();
     setUser(null);
-    Router.push("/login");
+    router.push("/login");
   };
 
-  // Auth context value
-  const value = {
-    isAuthenticated: !!user,
+  // Context values to be provided
+  const values = {
     user,
-    login,
-    logout,
-    register,
     loading,
-    error,
+    login,
+    register,
+    logout,
+    isAuthenticated: () => isAuthenticated(),
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
+  return <AuthContext.Provider value={values}>{children}</AuthContext.Provider>;
+}
 
 // Custom hook to use the auth context
 export const useAuth = () => {
@@ -107,5 +91,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-export default AuthContext;

@@ -1,12 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, CheckCircle2, Loader2 } from "lucide-react";
+import AuthService from "../../../../services/authService";
 
 export default function CreateNewPasswordPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    newPassword: "",
+    email: "",
+    password: "",
     confirmPassword: "",
   });
   const [showPassword, setShowPassword] = useState({
@@ -21,13 +23,21 @@ export default function CreateNewPasswordPage() {
   const images = ["/hero-slid.png", "/hero-slide.png", "/hero-slidee.png"];
 
   useEffect(() => {
+    // Get email from localStorage if available
+    if (typeof window !== "undefined") {
+      const storedEmail = localStorage.getItem("verification_email");
+      if (storedEmail) {
+        setFormData((prev) => ({ ...prev, email: storedEmail }));
+      }
+    }
+
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % images.length);
     }, 3000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -36,32 +46,56 @@ export default function CreateNewPasswordPage() {
     setError("");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (formData.newPassword !== formData.confirmPassword) {
+    if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match.");
       return;
     }
 
-    if (formData.newPassword.length < 8) {
+    if (formData.password.length < 8) {
       setError("Password must be at least 8 characters long.");
+      return;
+    }
+
+    if (!formData.email) {
+      setError("Email is required. Try going back to the previous step.");
       return;
     }
 
     setIsSubmitting(true);
     setError("");
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const response = await AuthService.changePassword(
+        formData.email,
+        formData.password,
+        formData.confirmPassword
+      );
 
-    setIsSubmitting(false);
-    setIsModalOpen(true);
+      if (response.success) {
+        setIsModalOpen(true);
+      } else {
+        setError(
+          response.error ||
+            response.message ||
+            "Failed to update password. Please try again."
+        );
+      }
+    } catch (error) {
+      console.error("Password update error:", error);
+      setError(
+        error.message || "An error occurred while updating your password."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleModalClose = () => {
     setIsModalOpen(false);
-    router.push("/signin");
+    router.push("/login");
   };
 
   return (
@@ -111,14 +145,21 @@ export default function CreateNewPasswordPage() {
             Your new password must be different from previously used passwords
           </p>
 
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
               <input
                 type={showPassword.new ? "text" : "password"}
-                name="newPassword"
-                value={formData.newPassword}
+                name="password"
+                value={formData.password}
                 onChange={handleInputChange}
                 required
+                disabled={isSubmitting}
                 className="w-full px-4 py-3 border text-black rounded-lg focus:border-[#3310C2] focus:ring-[#3310C2] outline-none"
                 placeholder="New Password"
               />
@@ -128,6 +169,7 @@ export default function CreateNewPasswordPage() {
                   setShowPassword((prev) => ({ ...prev, new: !prev.new }))
                 }
                 className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                disabled={isSubmitting}
               >
                 {showPassword.new ? (
                   <EyeOff className="text-gray-500 w-5 h-5" />
@@ -144,6 +186,7 @@ export default function CreateNewPasswordPage() {
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
                 required
+                disabled={isSubmitting}
                 className="w-full px-4 py-3 border text-black rounded-lg focus:border-[#3310C2] focus:ring-[#3310C2] outline-none"
                 placeholder="Confirm Password"
               />
@@ -156,6 +199,7 @@ export default function CreateNewPasswordPage() {
                   }))
                 }
                 className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                disabled={isSubmitting}
               >
                 {showPassword.confirm ? (
                   <EyeOff className="text-gray-500 w-5 h-5" />
@@ -165,16 +209,19 @@ export default function CreateNewPasswordPage() {
               </button>
             </div>
 
-            {error && (
-              <p className="text-red-500 text-sm text-center">{error}</p>
-            )}
-
             <button
               type="submit"
-              className="w-full bg-[#3310C2] text-white text-lg py-3 rounded-lg transition-colors hover:bg-[#3310C2]/90 disabled:bg-[#3310C2]/50"
+              className="w-full bg-[#3310C2] text-white text-lg py-3 rounded-lg transition-colors hover:bg-[#3310C2]/90 disabled:bg-[#3310C2]/50 flex items-center justify-center"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Updating..." : "Update Password"}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                "Update Password"
+              )}
             </button>
           </form>
 

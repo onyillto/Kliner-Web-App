@@ -25,7 +25,7 @@
     "**/*.ts",
     "**/*.tsx",
     "app/(auth)/auth/signin/page.tsx",
-    "app/(auth)/change-password"
+    "app/(auth)/auth/change-password"
   ],
   "exclude": ["node_modules"]
 }

@@ -1,21 +1,26 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { FaFacebook, FaGoogle } from "react-icons/fa";
-import { Eye, EyeOff } from "lucide-react";
-import { useRouter } from "next/navigation"; // Import useRouter
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import AuthService from "../../../../services/authService";
+
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
-    
     email: "",
     password: "",
     confirmPassword: "",
   });
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [showConfirmPassword, setShowConfirmPassword] =
-    useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const router = useRouter(); // Initialize the router
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [agreeTerms, setAgreeTerms] = useState(false);
+
+  const router = useRouter();
 
   const images = ["/hero-slid.png", "/hero-slide.png", "/hero-slidee.png"];
 
@@ -26,47 +31,55 @@ export default function SignUpPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleSignUp = (e: React.FormEvent<HTMLFormElement>) => {
-    // In your SignUpPage component, replace the handleSignUp function with this implementation:
-
-    const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-
-      try {
-        const response = await fetch("/api/v1/auth/register", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: formData.email,
-            password: formData.password,
-            confirmPassword: formData.confirmPassword,
-          }),
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          console.log("Registration successful:", data);
-          // Store email in localStorage to use on OTP verification page
-          localStorage.setItem("verification_email", formData.email);
-          router.push("/verify-otp");
-        } else {
-          // Handle registration failure
-          alert(data.message || "Registration failed. Please try again.");
-        }
-      } catch (error) {
-        console.error("Registration error:", error);
-        alert("An error occurred during registration. Please try again.");
-      }
-    };
+  const handleSignUp = async (e) => {
     e.preventDefault();
-    console.log("Signup submitted", formData);
-    router.push("/verify-otp");
+    setError("");
+
+    // Validate form
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    if (!agreeTerms) {
+      setError("You must agree to Terms of Service and Privacy Policy");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await AuthService.register({
+        email: formData.email,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+      });
+
+      if (response.success) {
+        // Store email in localStorage for OTP verification
+        if (typeof window !== "undefined") {
+          localStorage.setItem("verification_email", formData.email);
+        }
+        router.push("/auth/verify-otp");
+      } else {
+        setError(
+          response.error ||
+            response.message ||
+            "Registration failed. Please try again."
+        );
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      setError(
+        error.message ||
+          "An error occurred during registration. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -125,6 +138,7 @@ export default function SignUpPage() {
             <button
               className="w-[90%] max-w-[440px] sm:w-[80%] md:w-[440px] h-12 sm:h-[52px] bg-white py-1 sm:py-2 rounded flex items-center justify-center mx-auto"
               style={{ border: "1px solid black" }}
+              disabled={isLoading}
             >
               <FaFacebook className="mr-2" style={{ color: "#1877F2" }} />
               <span className="text-[#1E1E1EB2]">Sign up with Facebook</span>
@@ -133,6 +147,7 @@ export default function SignUpPage() {
             <button
               className="w-[90%] max-w-[440px] sm:w-[80%] md:w-[440px] h-12 sm:h-[52px] bg-white py-1 sm:py-2 rounded flex items-center justify-center mx-auto"
               style={{ border: "1px solid black" }}
+              disabled={isLoading}
             >
               <FaGoogle className="mr-2" style={{ color: "#DB4437" }} />
               <span className="text-[#1E1E1EB2]">Sign up with Google</span>
@@ -147,11 +162,14 @@ export default function SignUpPage() {
             <div className="w-16 sm:w-[108px] border-t border-black"></div>
           </div>
 
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 w-[90%] max-w-[440px] mx-auto">
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
+
           <form onSubmit={handleSignUp}>
             <div className="space-y-3 sm:space-y-4">
-
-
-
               {/* Email Field */}
               <div className="relative w-[90%] max-w-[440px] sm:w-full mx-auto">
                 <input
@@ -162,6 +180,7 @@ export default function SignUpPage() {
                   className="w-full p-2 pr-10 text-sm sm:text-base text-black border border-gray-300 rounded-lg focus:border-blue-500 outline-none placeholder-black"
                   placeholder="Email"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -175,11 +194,13 @@ export default function SignUpPage() {
                   className="w-full p-2 pr-10 text-sm sm:text-base text-black border border-gray-300 rounded-lg focus:border-blue-500 outline-none placeholder-black"
                   placeholder="Password"
                   required
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                  disabled={isLoading}
                 >
                   {showPassword ? (
                     <EyeOff className="text-gray-500 w-5 h-5" />
@@ -199,11 +220,13 @@ export default function SignUpPage() {
                   className="w-full p-2 pr-10 text-sm sm:text-base text-black border border-gray-300 rounded-lg focus:border-blue-500 outline-none placeholder-black"
                   placeholder="Confirm Password"
                   required
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                  disabled={isLoading}
                 >
                   {showConfirmPassword ? (
                     <EyeOff className="text-gray-500 w-5 h-5" />
@@ -216,24 +239,38 @@ export default function SignUpPage() {
 
             <div className="flex items-center mb-3 sm:mb-4 w-[90%] max-w-[440px] sm:w-full mx-auto mt-4">
               <label className="flex items-center text-sm sm:text-base text-[#000000]">
-                <input type="checkbox" className="mr-2" required />I agree to
-                the Terms of Service and Privacy Policy
+                <input
+                  type="checkbox"
+                  className="mr-2"
+                  checked={agreeTerms}
+                  onChange={(e) => setAgreeTerms(e.target.checked)}
+                  disabled={isLoading}
+                />
+                I agree to the Terms of Service and Privacy Policy
               </label>
             </div>
 
             <button
               type="submit"
-              className="w-[90%] max-w-[440px] sm:w-full bg-[#3310C2] border border-[[#3310C2]] text-lg text-[#ffff] text-sm sm:text-[18px]  py-2 rounded-lg mx-auto block"
+              className="w-[90%] max-w-[440px] sm:w-full bg-[#3310C2] border border-[[#3310C2]] text-lg text-[#ffff] text-sm sm:text-[18px] py-2 rounded-lg mx-auto block flex items-center justify-center"
+              disabled={isLoading}
             >
-              Create Account
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Creating Account...
+                </>
+              ) : (
+                "Create Account"
+              )}
             </button>
           </form>
 
           <p className="text-sm sm:text-base text-center mt-4 sm:mt-6 mb-3 sm:mb-4 font-semibold text-[#1E1E1E]">
             Already have an account?{" "}
-            <a href="/signup" className="text-blue-500">
+            <Link href="/login" className="text-blue-500">
               Login here
-            </a>
+            </Link>
           </p>
 
           <div>
