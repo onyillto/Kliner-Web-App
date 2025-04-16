@@ -67,7 +67,7 @@ const AuthService = {
   // Verify password reset PIN
   verifyPasswordPin: async (email, pin) => {
     try {
-      const response = await httpClient.post("/api/v1/auth/verify-pin", {
+      const response = await httpClient.post("/api/v1/auth/verifypin", {
         email,
         pin,
       });

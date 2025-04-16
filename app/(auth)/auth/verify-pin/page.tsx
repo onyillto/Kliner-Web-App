@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import AuthService from "../../../../services/authService";
 
@@ -12,6 +12,7 @@ export default function VerifyPinPage() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState("");
+  const [showToast, setShowToast] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const inputRefs = useRef([]);
   const router = useRouter();
@@ -47,6 +48,17 @@ export default function VerifyPinPage() {
       clearInterval(timerInterval);
     };
   }, []);
+
+  // Auto-hide toast after 3 seconds
+  useEffect(() => {
+    if (showToast) {
+      const timer = setTimeout(() => {
+        setShowToast(false);
+        router.push("/auth/change-password");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showToast, router]);
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -118,7 +130,9 @@ export default function VerifyPinPage() {
       const response = await AuthService.verifyPasswordPin(email, pinValue);
 
       if (response.success) {
-        router.push("/new-password");
+        // Show toast on success
+        setShowToast(true);
+        // Navigation will happen automatically after toast display
       } else {
         setError(
           response.error || response.message || "Invalid PIN. Please try again."
@@ -297,6 +311,35 @@ export default function VerifyPinPage() {
           </div>
         </div>
       </div>
+
+      {/* Success Toast */}
+      {showToast && (
+        <div className="fixed bottom-4 right-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-md flex items-center animate-slideIn z-50">
+          <CheckCircle className="w-5 h-5 mr-2" />
+          <div>
+            <p className="font-bold">Success!</p>
+            <p>PIN verified successfully. Redirecting...</p>
+          </div>
+        </div>
+      )}
+
+      {/* CSS for toast animation */}
+      <style jsx>{`
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+
+        .animate-slideIn {
+          animation: slideIn 0.3s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 }
