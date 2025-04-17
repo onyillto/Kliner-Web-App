@@ -35,36 +35,47 @@ export default function LoginPage() {
     }));
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
+const handleLogin = async (e) => {
+  e.preventDefault();
+  setError("");
+  setIsLoading(true);
 
-    try {
-      const response = await AuthService.login(
-        formData.email,
-        formData.password
-      );
+  try {
+    const response = await AuthService.login(formData.email, formData.password);
 
-      if (response.success) {
-        // Navigate to dashboard or home page after successful login
-        router.push("/");
-      } else {
-        setError(
-          response.error ||
-            response.message ||
-            "Login failed. Please check your credentials."
-        );
+    if (response.success && response.data) {
+      // Extract token and user data
+      const { token, ...userData } = response.data;
+
+      // Set token in cookie
+      const cookieExpiry = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60;
+      document.cookie = `auth_token=${token}; max-age=${cookieExpiry}; path=/; ${
+        process.env.NODE_ENV !== "development" ? "secure; " : ""
+      }samesite=strict`;
+
+      // Store user data in localStorage
+      if (typeof window !== "undefined") {
+        localStorage.setItem("user_data", JSON.stringify(userData));
       }
-    } catch (error) {
-      console.error("Login error:", error);
+
+      // Navigate to dashboard
+      router.push("/");
+    } else {
       setError(
-        error.message || "An error occurred during login. Please try again."
+        response.error ||
+          response.message ||
+          "Login failed. Please check your credentials."
       );
-    } finally {
-      setIsLoading(false);
     }
-  };
+  } catch (error) {
+    console.error("Login error:", error);
+    setError(
+      error.message || "An error occurred during login. Please try again."
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="flex h-[100vh] w-screen">
