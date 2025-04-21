@@ -1,55 +1,47 @@
-// pages/booking-confirmation.js
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter } from "next/navigation";
 import Head from "next/head";
 import Cookies from "js-cookie";
 
-export default function BookingConfirmation() {
-  const router = useRouter();
+// Create a separate component that uses searchParams
+function BookingVerification({
+  bookingData,
+  setBookingData,
+  setPaymentStatus,
+  setLoading,
+}) {
   const searchParams = useSearchParams();
-  const [bookingData, setBookingData] = useState(null);
-  const [paymentStatus, setPaymentStatus] = useState("checking");
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const verifyPayment = async () => {
       try {
-        // Load booking data from localStorage
-        const confirmedBooking = localStorage.getItem("bookingData");
-        if (!confirmedBooking) {
-          setLoading(false);
-          return;
-        }
-
-        const parsedBooking = JSON.parse(confirmedBooking);
-        setBookingData(parsedBooking);
-
         // Check if we have a reference from Paystack redirect
         const reference = searchParams.get("reference");
 
         // If no reference in URL but booking shows paid, assume it's already verified
         if (!reference) {
           setPaymentStatus(
-            parsedBooking.paymentStatus === "paid" ? "success" : "pending"
+            bookingData.paymentStatus === "paid" ? "success" : "pending"
           );
           setLoading(false);
           return;
         }
 
         // Verify payment status with backend
-        await verifyPaymentWithBackend(reference, parsedBooking);
+        await verifyPaymentWithBackend(reference, bookingData);
       } catch (error) {
         console.error("Error verifying payment:", error);
         setPaymentStatus("error");
-      } finally {
         setLoading(false);
       }
     };
 
-    verifyPayment();
-  }, [searchParams]);
+    if (bookingData) {
+      verifyPayment();
+    }
+  }, [searchParams, bookingData]);
 
   const verifyPaymentWithBackend = async (reference, parsedBooking) => {
     try {
@@ -83,8 +75,31 @@ export default function BookingConfirmation() {
     } catch (error) {
       console.error("Backend verification failed:", error);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
+
+  return null; // This component just handles the effect, no rendering
+}
+
+export default function BookingConfirmationContent() {
+  const router = useRouter();
+  const [bookingData, setBookingData] = useState(null);
+  const [paymentStatus, setPaymentStatus] = useState("checking");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Load booking data from localStorage
+    const confirmedBooking = localStorage.getItem("bookingData");
+    if (!confirmedBooking) {
+      setLoading(false);
+      return;
+    }
+
+    const parsedBooking = JSON.parse(confirmedBooking);
+    setBookingData(parsedBooking);
+  }, []);
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -151,10 +166,23 @@ export default function BookingConfirmation() {
             <ActionButtons paymentStatus={paymentStatus} router={router} />
           </div>
         </div>
+
+        {/* Wrap the component that uses searchParams in Suspense */}
+        <Suspense fallback={null}>
+          <BookingVerification
+            bookingData={bookingData}
+            setBookingData={setBookingData}
+            setPaymentStatus={setPaymentStatus}
+            setLoading={setLoading}
+          />
+        </Suspense>
       </div>
     </>
   );
 }
+
+// Don't forget to import useSearchParams in the component that uses it
+import { useSearchParams } from "next/navigation";
 
 // Component for loading screen
 function LoadingScreen() {

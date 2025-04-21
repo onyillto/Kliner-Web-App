@@ -1,47 +1,38 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+
+import { useState, useEffect, useRef, Ref } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, CheckCircle } from "lucide-react";
-import Link from "next/link";
+import { Loader2 } from "lucide-react";
 import AuthService from "../../../../services/authService";
 
 export default function VerifyPinPage() {
   const [pin, setPin] = useState(["", "", "", ""]);
   const [email, setEmail] = useState("");
-  const [timer, setTimer] = useState(300); // 5 minutes in seconds
+  const [timer, setTimer] = useState(300);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const inputRefs = useRef([]);
+
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const router = useRouter();
 
   const images = ["/hero-slid.png", "/hero-slide.png", "/hero-slidee.png"];
 
   useEffect(() => {
-    // Get email from localStorage
-    if (typeof window !== "undefined") {
-      const storedEmail = localStorage.getItem("verification_email");
-      if (storedEmail) {
-        setEmail(storedEmail);
-      }
-    }
+    const storedEmail = localStorage.getItem("verification_email");
+    if (storedEmail) setEmail(storedEmail);
 
-    // Image slider interval
     const imageInterval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % images.length);
     }, 3000);
 
-    // Timer countdown
     const timerInterval = setInterval(() => {
       setTimer((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
 
-    // Focus the first input on load
-    if (inputRefs.current[0]) {
-      inputRefs.current[0].focus();
-    }
+    if (inputRefs.current[0]) inputRefs.current[0].focus();
 
     return () => {
       clearInterval(imageInterval);
@@ -49,7 +40,6 @@ export default function VerifyPinPage() {
     };
   }, []);
 
-  // Auto-hide toast after 3 seconds
   useEffect(() => {
     if (showToast) {
       const timer = setTimeout(() => {
@@ -60,58 +50,48 @@ export default function VerifyPinPage() {
     }
   }, [showToast, router]);
 
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
-  const handlePinChange = (index, value) => {
+  const handlePinChange = (index: number, value: string) => {
     if (value.length <= 1 && /^\d*$/.test(value)) {
       const newPin = [...pin];
       newPin[index] = value;
       setPin(newPin);
-
-      // Auto advance to next input
       if (value && index < 3 && inputRefs.current[index + 1]) {
-        inputRefs.current[index + 1].focus();
+        inputRefs.current[index + 1]?.focus();
       }
     }
   };
 
-  const handleKeyDown = (index, e) => {
-    // Handle backspace
-    if (e.key === "Backspace") {
-      if (!pin[index] && index > 0 && inputRefs.current[index - 1]) {
-        inputRefs.current[index - 1].focus();
-      }
-    }
-    // Handle arrow keys
-    else if (e.key === "ArrowLeft" && index > 0) {
-      inputRefs.current[index - 1].focus();
+  const handleKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (e.key === "Backspace" && !pin[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    } else if (e.key === "ArrowLeft" && index > 0) {
+      inputRefs.current[index - 1]?.focus();
     } else if (e.key === "ArrowRight" && index < 3) {
-      inputRefs.current[index + 1].focus();
+      inputRefs.current[index + 1]?.focus();
     }
   };
 
-  const handlePaste = (e) => {
+  const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData("text/plain").trim();
-
+    const pastedData = e.clipboardData.getData("text").trim();
     if (/^\d{4}$/.test(pastedData)) {
       const digits = pastedData.split("");
       setPin(digits);
-
-      // Focus the last input
-      if (inputRefs.current[3]) {
-        inputRefs.current[3].focus();
-      }
+      if (inputRefs.current[3]) inputRefs.current[3].focus();
     }
   };
 
-  const handleVerifyPin = async (e) => {
+  const handleVerifyPin = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!email) {
       setError("Email not found. Please go back and request a new PIN.");
       return;
@@ -128,22 +108,16 @@ export default function VerifyPinPage() {
 
     try {
       const response = await AuthService.verifyPasswordPin(email, pinValue);
-
       if (response.success) {
-        // Show toast on success
         setShowToast(true);
-        // Navigation will happen automatically after toast display
       } else {
         setError(
           response.error || response.message || "Invalid PIN. Please try again."
         );
       }
-    } catch (error) {
-      console.error("PIN verification error:", error);
-      setError(
-        error.message ||
-          "An error occurred during verification. Please try again."
-      );
+    } catch (err: any) {
+      console.error("PIN verification error:", err);
+      setError(err.message || "An error occurred during verification.");
     } finally {
       setIsVerifying(false);
     }
@@ -160,24 +134,16 @@ export default function VerifyPinPage() {
 
     try {
       const response = await AuthService.forgotPassword(email);
-
       if (response.success) {
-        setTimer(300); // Reset timer to 5 minutes
-        setPin(["", "", "", ""]); // Clear PIN fields
-        // Focus the first input
-        if (inputRefs.current[0]) {
-          inputRefs.current[0].focus();
-        }
+        setTimer(300);
+        setPin(["", "", "", ""]);
+        if (inputRefs.current[0]) inputRefs.current[0].focus();
       } else {
-        setError(
-          response.error ||
-            response.message ||
-            "Failed to resend PIN. Please try again."
-        );
+        setError(response.error || response.message || "Failed to resend PIN.");
       }
-    } catch (error) {
-      console.error("Error resending PIN:", error);
-      setError(error.message || "An error occurred while resending the PIN.");
+    } catch (err: any) {
+      console.error("Error resending PIN:", err);
+      setError(err.message || "An error occurred while resending the PIN.");
     } finally {
       setIsResending(false);
     }
@@ -185,12 +151,12 @@ export default function VerifyPinPage() {
 
   return (
     <div className="flex h-screen w-screen">
-      {/* Left Side - Image Slider */}
+      {/* Left - Image Slider */}
       <div
-        className="hidden lg:flex w-1/2 h-screen bg-cover bg-center items-end justify-center relative transition-all duration-1000"
+        className="hidden lg:flex w-1/2 h-screen bg-cover bg-center items-end justify-center relative"
         style={{ backgroundImage: `url('${images[currentSlide]}')` }}
       >
-        <div className="absolute inset-0 bg-black/50"></div>
+        <div className="absolute inset-0 bg-black/50" />
         <div className="relative text-center text-white pb-10 px-6 w-full">
           <h2 className="text-xl lg:text-2xl font-bold mb-3">
             Impeccable Service
@@ -203,16 +169,16 @@ export default function VerifyPinPage() {
               <button
                 key={index}
                 onClick={() => setCurrentSlide(index)}
-                className={`w-2 h-2 lg:w-3 lg:h-3 rounded-full transition-all duration-300 ${
+                className={`w-2 h-2 lg:w-3 lg:h-3 rounded-full ${
                   index === currentSlide ? "bg-white" : "bg-[#787878]"
                 }`}
-              ></button>
+              />
             ))}
           </div>
         </div>
       </div>
 
-      {/* Right Side - PIN Verification Form */}
+      {/* Right - PIN Form */}
       <div className="flex-1 flex items-center justify-center bg-white">
         <div className="w-full max-w-md p-6">
           <div className="flex justify-center mb-6">
@@ -238,8 +204,8 @@ export default function VerifyPinPage() {
           </p>
 
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-              <span className="block sm:inline">{error}</span>
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+              <span>{error}</span>
             </div>
           )}
 
@@ -248,7 +214,9 @@ export default function VerifyPinPage() {
               {pin.map((digit, index) => (
                 <input
                   key={index}
-                  ref={(el) => (inputRefs.current[index] = el)}
+                  ref={(el) => {
+                    inputRefs.current[index] = el;
+                  }}
                   type="text"
                   inputMode="numeric"
                   maxLength={1}
@@ -285,61 +253,14 @@ export default function VerifyPinPage() {
               className={`text-sm font-medium ${
                 timer > 0 || isVerifying || isResending
                   ? "text-gray-400 cursor-not-allowed"
-                  : "text-[#3310C2] hover:text-[#3310C2]/80"
+                  : "text-[#3310C2]"
               }`}
             >
-              {isResending ? (
-                <span className="flex items-center justify-center">
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                  Sending...
-                </span>
-              ) : timer > 0 ? (
-                `Resend PIN in ${formatTime(timer)}`
-              ) : (
-                "Resend PIN"
-              )}
+              Resend PIN
             </button>
-          </div>
-
-          <div className="text-center mt-4">
-            <Link
-              href="/forgot-password"
-              className="text-[#00438F] text-sm hover:underline"
-            >
-              Back to Reset Password
-            </Link>
           </div>
         </div>
       </div>
-
-      {/* Success Toast */}
-      {showToast && (
-        <div className="fixed bottom-4 right-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-md flex items-center animate-slideIn z-50">
-          <CheckCircle className="w-5 h-5 mr-2" />
-          <div>
-            <p className="font-bold">Success!</p>
-            <p>PIN verified successfully. Redirecting...</p>
-          </div>
-        </div>
-      )}
-
-      {/* CSS for toast animation */}
-      <style jsx>{`
-        @keyframes slideIn {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-
-        .animate-slideIn {
-          animation: slideIn 0.3s ease-out forwards;
-        }
-      `}</style>
     </div>
   );
 }
