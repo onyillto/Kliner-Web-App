@@ -1,18 +1,47 @@
 // UserProfile.js
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import BottomNavigation from "../../components/BottomNavigation";
+import { useAuth } from "../../../context/AuthContext";
+import { useRouter } from "next/navigation";
 
 const UserProfile = () => {
+  const { user, loading, isAuthenticated } = useAuth();
+  const router = useRouter();
   const [profileData, setProfileData] = useState({
-    name: "Monir UX Designer",
-    email: "moniruzzaman091@gmail.com",
-    phone: "+088 01876206538",
+    name: "",
+    email: "",
+    phone: "",
     streetNumber: "",
     houseNumber: "",
     city: "",
     state: "",
   });
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!loading && !isAuthenticated()) {
+      router.push("/login");
+    }
+  }, [loading, isAuthenticated, router]);
+
+  // Update profile data when user data is available
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        name:
+          user.firstName && user.lastName
+            ? `${user.firstName} ${user.lastName}`
+            : user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        streetNumber: user.address ? user.address.split(" ")[0] || "" : "",
+        houseNumber: "",
+        city: "",
+        state: "",
+      });
+    }
+  }, [user]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -21,6 +50,24 @@ const UserProfile = () => {
       [name]: value,
     });
   };
+
+  // Show loading state while authentication is being checked
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Loading...
+      </div>
+    );
+  }
+
+  // If not authenticated, don't render the page content
+  if (!isAuthenticated()) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Redirecting to login...
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -62,15 +109,23 @@ const UserProfile = () => {
           {/* Personal information section */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">
-              Personal Informations
+              Personal Information
             </h2>
 
             <div className="flex flex-col md:flex-row items-start gap-6 mb-6">
               <div className="w-24 h-24 relative">
                 <img
-                  src="https://randomuser.me/api/portraits/men/72.jpg"
+                  src={
+                    user?.profileImage?.url ||
+                    "https://randomuser.me/api/portraits/men/72.jpg"
+                  }
                   alt="Profile"
                   className="w-full h-full rounded-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).onerror = null;
+                    (e.target as HTMLImageElement).src =
+                      "https://randomuser.me/api/portraits/men/72.jpg";
+                  }}
                 />
               </div>
 
@@ -302,7 +357,7 @@ const UserProfile = () => {
                   </div>
                 </div>
 
-                <div className="relative">
+                {/* <div className="relative">
                   <select
                     name="state"
                     value={profileData.state}
@@ -328,7 +383,7 @@ const UserProfile = () => {
                       />
                     </svg>
                   </div>
-                </div>
+                </div> */}
               </div>
 
               {/* Update Button */}

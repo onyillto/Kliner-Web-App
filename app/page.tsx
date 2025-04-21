@@ -7,15 +7,48 @@ import ServiceItem from "./components/ServiceItem";
 import BottomNavigation from "./components/BottomNavigation";
 import DesktopSidebar from "./components/DesktopSidebar";
 import ProgressBar from "./components/ProgressBar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useRouter } from "next/navigation"; // Import router
 
 export default function Home() {
+  const { user, loading, isAuthenticated } = useAuth();
+  const router = useRouter(); // Initialize router
+
+  useEffect(() => {
+    // If authentication check completed and user is not authenticated
+    if (!loading && !isAuthenticated()) {
+      // Redirect to login page
+      router.push("/login");
+    }
+  }, [loading, isAuthenticated, router]);
+
+  // Show loading state while authentication is being checked
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Loading...
+      </div>
+    );
+  }
+
+  // If not authenticated, don't render the page content
+  // This prevents flash of content before redirect happens
+  if (!isAuthenticated()) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Redirecting to login...
+      </div>
+    );
+  }
+
+  // Only render the page content if authenticated
   return (
     <div className="bg-gray-50 min-h-screen relative">
       <main className="mx-auto bg-white min-h-screen shadow-lg pb-16 lg:pl-56">
         <div className="max-w-md mx-auto lg:max-w-none lg:mx-0 lg:px-8">
-          {/* User Header */}
-          <UserHeader name="Daniel" />
+          {/* User Header with dynamic user name */}
+          <UserHeader name={user ? user.firstName || user.name : "Guest"} />
 
           <div className="lg:grid lg:grid-cols-12 lg:gap-6">
             <div className="lg:col-span-9">

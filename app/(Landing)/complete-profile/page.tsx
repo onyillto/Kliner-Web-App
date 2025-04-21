@@ -1,42 +1,122 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+import Cookies from "js-cookie";
 
 export default function UserProfileForm() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
-    fullName: "",
+    firstName: "",
+    lastName: "",
     username: "",
     dateOfBirth: "",
     email: "",
-    phone: "",
+    mobile: "",
     address: "",
-    profilePic: null,
+    image: null,
+    user_id: "",
   });
-
   const [preview, setPreview] = useState(null);
+
+  // Try to get user_id on component mount
+  useEffect(() => {
+    // If you have the user_id available from your screenshot
+    setFormData((prev) => ({
+      ...prev,
+      user_id: "Klinner-4e9cf4c6-7866-4836-bc9c-f99c90c0ea23", // This is from your screenshot
+    }));
+
+  
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handlePhoneChange = (value) => {
-    setFormData({ ...formData, phone: value });
+    setFormData({ ...formData, mobile: value });
   };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData({ ...formData, profilePic: file });
+      setFormData({ ...formData, image: file });
       setPreview(URL.createObjectURL(file));
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form Data Submitted:", formData);
-    alert("Profile Updated Successfully!");
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Create FormData for the API request
+      const formDataToSend = new FormData();
+
+      // Add all text fields
+      if (formData.firstName)
+        formDataToSend.append("firstName", formData.firstName);
+      if (formData.lastName)
+        formDataToSend.append("lastName", formData.lastName);
+      if (formData.username)
+        formDataToSend.append("username", formData.username);
+      if (formData.dateOfBirth)
+        formDataToSend.append("dateOfBirth", formData.dateOfBirth);
+      if (formData.email) formDataToSend.append("email", formData.email);
+      if (formData.mobile) formDataToSend.append("mobile", formData.mobile);
+      if (formData.address) formDataToSend.append("address", formData.address);
+      if (formData.user_id) formDataToSend.append("user_id", formData.user_id);
+
+      // Add the image file if it exists
+      if (formData.image instanceof File) {
+        formDataToSend.append("image", formData.image);
+      }
+
+      // Get the auth token from cookies
+      const authToken = Cookies.get("authToken");
+
+      // Make the API request to the correct endpoint
+      const response = await axios.post(
+        "http://localhost:3002/api/v1/user/fill-data",
+        formDataToSend,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            // Include the auth token in the Authorization header if it exists
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
+          withCredentials: true, // Ensure cookies are sent with the request
+        }
+      );
+
+      console.log("Profile updated successfully:", response.data);
+      alert("Profile Updated Successfully!");
+
+      // Redirect to dashboard or home page after successful update
+      router.push("/dashboard");
+    } catch (err) {
+      console.error("Error updating profile:", err);
+
+      // Format error message
+      let errorMessage = "Failed to update profile. Please try again.";
+
+      if (err.message) {
+        errorMessage = err.message;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -74,16 +154,36 @@ export default function UserProfileForm() {
         <h1 className="text-2xl font-bold text-center mb-4 text-gray-800">
           Fill your profile
         </h1>
+
+        {/* Error message */}
+        {error && (
+          <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            name="fullName"
-            value={formData.fullName}
-            onChange={handleChange}
-            required
-            placeholder="Full Name"
-            className="w-full p-2 border text-black rounded-md focus:ring focus:ring-purple-300"
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <input
+              type="text"
+              name="firstName"
+              value={formData.firstName}
+              onChange={handleChange}
+              required
+              placeholder="First Name"
+              className="w-full p-2 border text-black rounded-md focus:ring focus:ring-purple-300"
+            />
+
+            <input
+              type="text"
+              name="lastName"
+              value={formData.lastName}
+              onChange={handleChange}
+              required
+              placeholder="Last Name"
+              className="w-full p-2 border text-black rounded-md focus:ring focus:ring-purple-300"
+            />
+          </div>
 
           <input
             type="text"
@@ -100,7 +200,6 @@ export default function UserProfileForm() {
             name="dateOfBirth"
             value={formData.dateOfBirth}
             onChange={handleChange}
-            required
             className="w-full p-2 text-black border rounded-md focus:ring focus:ring-purple-300"
           />
 
@@ -109,14 +208,13 @@ export default function UserProfileForm() {
             name="email"
             value={formData.email}
             onChange={handleChange}
-            required
             placeholder="Email"
             className="w-full text-black p-2 border rounded-md focus:ring focus:ring-purple-300"
           />
 
           <PhoneInput
             country={"ng"}
-            value={formData.phone}
+            value={formData.mobile}
             onChange={handlePhoneChange}
             inputClass="!w-full !p-2 !border !rounded-md focus:ring focus:ring-purple-300"
           />
@@ -128,15 +226,18 @@ export default function UserProfileForm() {
             onChange={handleChange}
             required
             placeholder="Address"
-            className="w-full text-black  p-2 border rounded-md focus:ring focus:ring-purple-300"
+            className="w-full text-black p-2 border rounded-md focus:ring focus:ring-purple-300"
           />
 
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-purple-600 text-white text-lg py-2 rounded-md hover:bg-purple-700 transition duration-200"
+            disabled={loading}
+            className={`w-full bg-purple-600 text-white text-lg py-2 rounded-md transition duration-200 ${
+              loading ? "opacity-70 cursor-not-allowed" : "hover:bg-purple-700"
+            }`}
           >
-            Complete Profile
+            {loading ? "Updating..." : "Complete Profile"}
           </button>
         </form>
       </div>

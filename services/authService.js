@@ -127,4 +127,44 @@ const AuthService = {
   },
 };
 
+
+// Add this method to your AuthService object
+
+  fillProfileData: async (profileData) => {
+    try {
+      // Create a FormData object for the request
+      const formDataToSend = new FormData();
+      
+      // Add all text fields
+      if (profileData.firstName) formDataToSend.append("firstName", profileData.firstName);
+      if (profileData.lastName) formDataToSend.append("lastName", profileData.lastName);
+      if (profileData.username) formDataToSend.append("username", profileData.username);
+      if (profileData.dateOfBirth) formDataToSend.append("dateOfBirth", profileData.dateOfBirth);
+      if (profileData.email) formDataToSend.append("email", profileData.email);
+      if (profileData.mobile) formDataToSend.append("mobile", profileData.mobile);
+      if (profileData.address) formDataToSend.append("address", profileData.address);
+      if (profileData.user_id) formDataToSend.append("user_id", profileData.user_id);
+      
+      // Add the image file if it exists
+      if (profileData.image instanceof File) {
+        formDataToSend.append("image", profileData.image);
+      }
+      
+      // Send request to the correct endpoint
+      const response = await httpClient.post(
+        "/api/v1/user/fill-data", 
+        formDataToSend,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          withCredentials: true, // Ensure cookies with auth token are sent
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  };
 export default AuthService;

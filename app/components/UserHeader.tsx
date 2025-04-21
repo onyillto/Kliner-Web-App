@@ -1,7 +1,8 @@
 // File: app/components/UserHeader.tsx
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import NotificationDropdown from "./Notification_Dropdown";
+import { useAuth } from "../../context/AuthContext"; // Import your auth context
 
 interface UserHeaderProps {
   name: string;
@@ -9,6 +10,15 @@ interface UserHeaderProps {
 
 export default function UserHeader({ name }: UserHeaderProps) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [profileImage, setProfileImage] = useState("/avartar.png"); // Default image
+  const { user } = useAuth(); // Get user from auth context
+
+  useEffect(() => {
+    // Update profile image if user data is available
+    if (user && user.profileImage && user.profileImage.url) {
+      setProfileImage(user.profileImage.url);
+    }
+  }, [user]);
 
   const toggleNotification = () => {
     setIsNotificationOpen(!isNotificationOpen);
@@ -19,9 +29,10 @@ export default function UserHeader({ name }: UserHeaderProps) {
       <div className="flex items-center">
         <div className="w-10 h-10 bg-gray-200 rounded-full mr-3 overflow-hidden lg:w-12 lg:h-12">
           <img
-            src="/avartar.png"
+            src={profileImage}
             alt="User avatar"
             className="w-full h-full object-cover"
+            onError={() => setProfileImage("/avartar.png")} // Fallback if image fails to load
           />
         </div>
         <div>

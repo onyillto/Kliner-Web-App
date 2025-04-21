@@ -58,8 +58,15 @@ const handleLogin = async (e) => {
         localStorage.setItem("user_data", JSON.stringify(userData));
       }
 
-      // Navigate to dashboard
-      router.push("/");
+      // Check if all required user data fields are filled
+      const isProfileComplete = checkProfileCompleteness(userData);
+
+      // Navigate based on profile completeness
+      if (isProfileComplete) {
+        router.push("/");
+      } else {
+        router.push("/complete-data");
+      }
     } else {
       setError(
         response.error ||
@@ -75,6 +82,29 @@ const handleLogin = async (e) => {
   } finally {
     setIsLoading(false);
   }
+};
+
+// Helper function to check if all required profile fields are filled
+const checkProfileCompleteness = (userData) => {
+  // Define required fields
+  const requiredFields = [
+    "user_id",
+    "firstName",
+    "lastName",
+    "email",
+    "phone",
+    "address",
+    "username",
+  ];
+
+  // Check if all required fields exist and have values
+  return requiredFields.every((field) => {
+    return (
+      userData[field] !== undefined &&
+      userData[field] !== null &&
+      userData[field] !== ""
+    );
+  });
 };
 
   return (

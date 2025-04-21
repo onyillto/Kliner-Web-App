@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import { useRouter } from "next/navigation";
+import DateTimeSelector from "../../../components/DateTimeSelector";
 
 export default function HouseCleaningPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function HouseCleaningPage() {
   });
   const [totalItems, setTotalItems] = useState(0);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [isDateSelectorOpen, setIsDateSelectorOpen] = useState(false);
 
   // Calculate total items whenever items state changes
   useEffect(() => {
@@ -59,8 +61,8 @@ export default function HouseCleaningPage() {
     // Save the selected items data to localStorage
     localStorage.setItem("cleaningItems", JSON.stringify(items));
 
-    // Navigate to the next step
-    router.push("/booking-summary");
+    // Open the date selector modal instead of navigating
+    setIsDateSelectorOpen(true);
   };
 
   // Get room icon based on room name
@@ -222,6 +224,13 @@ export default function HouseCleaningPage() {
         <title>House Cleaning | Home Services</title>
         <meta name="description" content="Book our house cleaning service" />
       </Head>
+
+      {/* Date selector modal */}
+      <DateTimeSelector
+        isOpen={isDateSelectorOpen}
+        onClose={() => setIsDateSelectorOpen(false)}
+        selectedItems={items}
+      />
 
       <div className="min-h-screen bg-gray-50">
         {/* Top service info banner */}

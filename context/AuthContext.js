@@ -4,25 +4,46 @@ import React, { createContext, useState, useContext, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AuthService from "./../services/authService";
 import { isAuthenticated, getCurrentUser } from "../utils/tokenService";
+import API from "../utils/httpClient"; // Make sure to import API
 
-// Create the context
 const AuthContext = createContext();
 
-// AuthProvider component that wraps our app and makes auth available to all components
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  // Fetch user data function
+  const fetchUserData = async (userId) => {
+    try {
+      const response = await API.get(`/api/v1/user/${userId}`);
+      return response;
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      return null;
+    }
+  };
+
   // Check if user is authenticated on mount
+  // In your AuthContext.js, modify the useEffect
+
   useEffect(() => {
     const initAuth = async () => {
       setLoading(true);
 
       if (typeof window !== "undefined") {
-        // Check if a user is already logged in
         if (isAuthenticated()) {
-          setUser(getCurrentUser());
+          const basicUserData = getCurrentUser();
+
+          // Format user data to include a name property
+          const formattedUserData = {
+            ...basicUserData,
+            name: basicUserData.firstName || "Guest",
+          };
+
+          setUser(formattedUserData);
+
+          // Rest of your code for fetching additional user data...
         }
         setLoading(false);
       }
@@ -31,13 +52,23 @@ export function AuthProvider({ children }) {
     initAuth();
   }, []);
 
-  // Login function that will be passed to components
-  const login = async (email, password) => {
+  // Define the login function properly
+  const loginUser = async (email, password) => {
     try {
       const response = await AuthService.login(email, password);
 
       if (response.success) {
-        setUser(getCurrentUser());
+        const currentUser = getCurrentUser();
+        setUser(currentUser);
+
+        // Also fetch complete user data after login
+        if (currentUser && currentUser.id) {
+          const userData = await fetchUserData(currentUser.id);
+          if (userData) {
+            setUser((prev) => ({ ...prev, ...userData }));
+          }
+        }
+
         return { success: true };
       } else {
         return { success: false, message: response.error || "Login failed" };
@@ -51,7 +82,7 @@ export function AuthProvider({ children }) {
   };
 
   // Register function
-  const register = async (userData) => {
+  const registerUser = async (userData) => {
     try {
       const response = await AuthService.register(userData);
       return response;
@@ -64,26 +95,26 @@ export function AuthProvider({ children }) {
   };
 
   // Logout function
-  const logout = () => {
+  const logoutUser = () => {
     AuthService.logout();
     setUser(null);
     router.push("/login");
   };
 
-  // Context values to be provided
+  // Context values with correctly named functions
   const values = {
     user,
     loading,
-    login,
-    register,
-    logout,
+    login: loginUser,
+    register: registerUser,
+    logout: logoutUser,
     isAuthenticated: () => isAuthenticated(),
+    fetchUserData, // Add this to allow components to refresh user data if needed
   };
 
   return <AuthContext.Provider value={values}>{children}</AuthContext.Provider>;
 }
 
-// Custom hook to use the auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
