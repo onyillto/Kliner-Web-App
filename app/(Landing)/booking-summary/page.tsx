@@ -101,7 +101,7 @@ export default function BookingSummary() {
 
       // Make the API call to your backend
       const response = await fetch(
-        "http://localhost:3002/api/v1/service/create-service",
+        "https://klinner.onrender.com/api/v1/service/create-service",
         {
           method: "POST",
           headers: {

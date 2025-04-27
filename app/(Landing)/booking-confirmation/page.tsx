@@ -49,7 +49,7 @@ function BookingVerification({
       const authToken = Cookies.get("auth_token");
 
       const response = await fetch(
-        `http://localhost:3002/api/v1/payments/verify`,
+        `https://klinner.onrender.com/api/v1/payments/verify`,
         {
           method: "POST",
           headers: {

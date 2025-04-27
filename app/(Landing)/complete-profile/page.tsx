@@ -84,7 +84,7 @@ export default function UserProfileForm() {
 
       // Make the API request to the correct endpoint
       const response = await axios.post(
-        "http://localhost:3002/api/v1/user/fill-data",
+        "https://klinner.onrender.com/api/v1/user/fill-data",
         formDataToSend,
         {
           headers: {
