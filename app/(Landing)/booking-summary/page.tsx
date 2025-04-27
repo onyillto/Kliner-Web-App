@@ -32,7 +32,7 @@ export default function BookingSummary() {
     loadBookingData();
   }, [router]);
 
-  const formatDate = (dateString: string | null): string => {
+  const formatDate = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -60,87 +60,88 @@ export default function BookingSummary() {
     }
   };
 
-const handleConfirmBooking = async () => {
-  setLoading(true);
+  const handleConfirmBooking = async () => {
+    setLoading(true);
 
-  try {
-    // Retrieve the auth token from cookies
-    const authToken = Cookies.get("auth_token");
+    try {
+      // Retrieve the auth token from cookies
+      const authToken = Cookies.get("auth_token");
 
-    if (!authToken) {
-      alert("Authentication required. Please log in again.");
-      return;
-    }
-
-    const userData = JSON.parse(localStorage.getItem("user_data") || "{}");
-    const userId = userData.user_id;
-
-    if (!userId) {
-      alert("User ID not found. Please log in again.");
-      return;
-    }
-
-    // Calculate service rate
-    const basePrice = 5000;
-    const pricePerItem = 2000;
-    const totalItems = bookingData.areas?.length || 0;
-    const serviceRate = ((basePrice + totalItems * pricePerItem) / 100).toFixed(
-      2
-    );
-
-    const serviceData = {
-      user_id: userId,
-      serviceName: bookingData.serviceName || "Cleaning",
-      serviceCategory: bookingData.serviceCategory || "Standard Home Cleaning",
-      areas: bookingData.areas || [],
-      bookingDate: bookingData.bookingDate,
-      bookingTime: bookingData.bookingTime,
-      location: bookingData.location,
-      serviceRate,
-    };
-
-    // Make the API call to your backend
-    const response = await fetch(
-      "http://localhost:3002/api/v1/service/create-service",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify(serviceData),
+      if (!authToken) {
+        alert("Authentication required. Please log in again.");
+        setLoading(false);
+        return;
       }
-    );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      alert(`Server error: ${response.status} ${errorText}`);
-      return;
+      const userData = JSON.parse(localStorage.getItem("user_data") || "{}");
+      const userId = userData.user_id;
+
+      if (!userId) {
+        alert("User ID not found. Please log in again.");
+        setLoading(false);
+        return;
+      }
+
+      // Calculate service rate
+      const basePrice = 5000;
+      const pricePerItem = 2000;
+      const totalItems = bookingData.areas?.length || 0;
+      const serviceRate = ((basePrice + totalItems * pricePerItem) / 100).toFixed(2);
+
+      const serviceData = {
+        user_id: userId,
+        serviceName: bookingData.serviceName || "Cleaning",
+        serviceCategory: bookingData.serviceCategory || "Standard Home Cleaning",
+        areas: bookingData.areas || [],
+        bookingDate: bookingData.bookingDate,
+        bookingTime: bookingData.bookingTime,
+        location: bookingData.location,
+        serviceRate,
+      };
+
+      // Make the API call to your backend
+      const response = await fetch(
+        "http://localhost:3002/api/v1/service/create-service",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(serviceData),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        alert(`Server error: ${response.status} ${errorText}`);
+        setLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      const { authorization_url, access_code, reference } = data.data.payment;
+      const serviceId = data.data.cleaningService._id;
+
+      // Store booking data in localStorage so the confirmation page can access it
+      const confirmedBooking = {
+        ...bookingData,
+        id: serviceId,
+        confirmed: true,
+        paymentStatus: "pending",
+        paymentReference: reference,
+      };
+      
+      localStorage.setItem("bookingData", JSON.stringify(confirmedBooking));
+
+      // Redirect to payment page
+      window.location.href = authorization_url;
+    } catch (error) {
+      console.error("Error during booking confirmation:", error);
+      setLoading(false);
+      alert(`Booking failed: ${error.message}`);
     }
-
-    const data = await response.json();
-    const { authorization_url, access_code, reference } = data.data.payment;
-    const serviceId = data.data.cleaningService._id;
-
-    // Store booking data
-    const confirmedBooking = {
-      ...bookingData,
-      id: serviceId,
-      confirmed: true,
-      paymentStatus: "pending",
-      paymentReference: reference,
-    };
-    localStorage.setItem("bookingData", JSON.stringify(confirmedBooking));
-
-    // Redirect to payment page
-    window.location.href = authorization_url;
-  } catch (error) {
-    console.error("Error during booking confirmation:", error);
-    setLoading(false);
-    alert(`Booking failed: ${error.message}`);
-  }
-};
-
+  };
 
   const handleEditBooking = () => {
     router.push("/house-cleaning");
@@ -148,7 +149,7 @@ const handleConfirmBooking = async () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen text-black flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-700">Loading your booking details...</p>
@@ -159,7 +160,7 @@ const handleConfirmBooking = async () => {
 
   if (!bookingData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen text-black flex items-center justify-center bg-gray-50">
         <div className="text-center p-6 bg-white rounded-lg shadow-md">
           <svg
             className="w-16 h-16 text-red-500 mx-auto mb-4"
@@ -209,8 +210,8 @@ const handleConfirmBooking = async () => {
   const calculatePrice = () => {
     if (!bookingData.areas) return 0;
 
-    const basePrice = 5000; // Base price in cents (₦50)
-    const pricePerItem = 2000; // Price per area in cents (₦20)
+    const basePrice = 500000; // Base price in cents (₦50)
+    const pricePerItem = 200000; // Price per area in cents (₦20)
     const totalItems = bookingData.areas.length;
 
     return ((basePrice + totalItems * pricePerItem) / 100).toFixed(2);
@@ -223,7 +224,7 @@ const handleConfirmBooking = async () => {
         <meta name="description" content="Review your booking details" />
       </Head>
 
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen text-black bg-gray-50">
         {/* Top service info banner */}
         <div className="bg-gradient-to-r from-purple-700 to-purple-900 text-white p-3 text-center">
           <p className="text-sm">Professional Cleaning Services</p>
@@ -435,22 +436,22 @@ const handleConfirmBooking = async () => {
               <div className="border-b pb-4">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Base Fee</span>
-                  <span className="font-medium text-gray-900">₦50.00</span>
+                  <span className="font-medium text-gray-900">₦5000.00</span>
                 </div>
               </div>
 
-              <div className="border-b pb-4">
+              <div className="border-b pb-6">
                 <div className="flex justify-between">
                   <span className="text-gray-600">
-                    Areas Fee ({bookingData.areas?.length || 0} × ₦20.00)
+                    Areas Fee ({bookingData.areas?.length || 0} × ₦2000.00)
                   </span>
                   <span className="font-medium text-gray-900">
-                    ₦{((bookingData.areas?.length || 0) * 20).toFixed(2)}
+                    ₦{(((bookingData.areas?.length || 0) * 2000)).toFixed(2)}
                   </span>
                 </div>
               </div>
 
-              <div className="pt-2">
+              <div className="p-6">
                 <div className="flex justify-between">
                   <span className="text-gray-800 font-semibold">Total</span>
                   <span className="font-bold text-purple-600 text-xl">
@@ -463,7 +464,7 @@ const handleConfirmBooking = async () => {
         </div>
 
         {/* Fixed bottom action buttons */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-md">
+        <div className="fixed bottom-0 mt-6 left-0 right-0 p-4 bg-white border-t shadow-md">
           <div className="max-w-3xl mx-auto flex flex-col md:flex-row gap-3">
             <button
               onClick={handleEditBooking}
@@ -482,4 +483,5 @@ const handleConfirmBooking = async () => {
       </div>
     </>
   );
+
 }

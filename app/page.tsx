@@ -19,7 +19,7 @@ export default function Home() {
     // If authentication check completed and user is not authenticated
     if (!loading && !isAuthenticated()) {
       // Redirect to login page
-      router.push("/login");
+      router.push("/auth/signin");
     }
   }, [loading, isAuthenticated, router]);
 

@@ -95,7 +95,7 @@ export default function CreateNewPasswordPage() {
 
   const handleModalClose = () => {
     setIsModalOpen(false);
-    router.push("/login");
+    router.push("/auth/sigin");
   };
 
   return (

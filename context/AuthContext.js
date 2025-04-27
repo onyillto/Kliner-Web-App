@@ -98,7 +98,7 @@ export function AuthProvider({ children }) {
   const logoutUser = () => {
     AuthService.logout();
     setUser(null);
-    router.push("/login");
+    router.push("/auth/sigin");
   };
 
   // Context values with correctly named functions

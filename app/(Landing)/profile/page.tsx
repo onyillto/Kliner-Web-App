@@ -21,7 +21,7 @@ const UserProfile = () => {
   // Redirect if not authenticated
   useEffect(() => {
     if (!loading && !isAuthenticated()) {
-      router.push("/login");
+      router.push("/auth/signin");
     }
   }, [loading, isAuthenticated, router]);
 

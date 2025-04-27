@@ -13,7 +13,7 @@ export default function BookingPage() {
   // Define service-specific images
   const serviceImages = {
     laundry: "/laundry2.jpg",
-    cleaning: "/cleaning1.jpg",
+    cleaning: "/cleaning2.jpg",
     gardening: "/gardening-service.svg",
     repairs: "/repairs-service.svg",
     "move-out": "/move-out-service.svg",
@@ -107,7 +107,7 @@ export default function BookingPage() {
         />
       </Head>
 
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screentext-black bg-gray-50">
         <header className="bg-white shadow-sm p-4">
           <div className="max-w-5xl mx-auto flex items-center">
             <button
@@ -156,7 +156,7 @@ export default function BookingPage() {
               </h1>
               <div className="flex items-center mt-2">
                 <span className="text-yellow-500">★</span>
-                <span className="ml-1">{serviceData.rating}</span>
+                <span className="ml-1 text-black">{serviceData.rating}</span>
                 <span className="ml-1 text-gray-500">|</span>
                 <span className="ml-1 text-gray-500">
                   {serviceData.reviews.toLocaleString()} Reviews
@@ -175,7 +175,7 @@ export default function BookingPage() {
           </div>
 
           <div className="mb-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center text-black mb-4">
               <h2 className="text-xl font-bold">Photos & Videos</h2>
               <button className="text-indigo-600 font-medium">See All</button>
             </div>

@@ -408,45 +408,29 @@ export default function HouseCleaningPage() {
           </div>
 
           {/* Summary */}
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+          <div className="bg-white rounded-xl shadow-sm p-6 mt-6 mb-6 sm:mt-4 sm:mb-4">
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="text-base font-medium text-gray-900">
                   Cleaning Summary
                 </h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  {totalItems > 0
-                    ? `${totalItems} area${
-                        totalItems !== 1 ? "s" : ""
-                      } selected`
-                    : "No areas selected yet"}
+                <p className="text-sm text-gray-500">
+                  {totalItems} {totalItems === 1 ? "area" : "areas"} selected
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-600">Estimated time</p>
-                <p className="text-xl font-bold text-purple-600">
+                <p className="text-sm text-gray-500">Estimated time</p>
+                <p className="text-lg font-semibold text-purple-600">
                   {getEstimatedTime()}
                 </p>
               </div>
             </div>
-          </div>
 
-          {/* Continue button */}
-          <div
-            className={
-              isDesktop
-                ? "mt-6"
-                : "fixed bottom-0 left-0 right-0 p-4 bg-white border-t"
-            }
-          >
             <button
               onClick={handleContinue}
-              className={`w-full py-4 bg-purple-600 text-white rounded-xl text-lg font-medium shadow-lg hover:bg-purple-700 transition-all duration-300 ${
-                totalItems === 0 ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-              disabled={totalItems === 0}
+              className="mt-6 w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg transition duration-300"
             >
-              Continue to Booking
+              Continue
             </button>
           </div>
         </div>

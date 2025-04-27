@@ -1,7 +1,8 @@
+// pages/booking-confirmation.js
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Head from "next/head";
 import Cookies from "js-cookie";
 
@@ -41,19 +42,22 @@ function BookingVerification({
     if (bookingData) {
       verifyPayment();
     }
-  }, [searchParams, bookingData]);
+  }, [searchParams, bookingData, setPaymentStatus, setLoading]);
 
   const verifyPaymentWithBackend = async (reference, parsedBooking) => {
     try {
       const authToken = Cookies.get("auth_token");
+
       const response = await fetch(
-        `http://localhost:3002/api/v1/payments/verify?reference=${reference}`,
+        `http://localhost:3002/api/v1/payments/verify`,
         {
-          method: "GET",
+          method: "POST",
           headers: {
             Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
           },
           credentials: "include",
+          body: JSON.stringify({ reference }), // << send reference inside the body
         }
       );
 
@@ -80,109 +84,9 @@ function BookingVerification({
     }
   };
 
+
   return null; // This component just handles the effect, no rendering
 }
-
-export default function BookingConfirmationContent() {
-  const router = useRouter();
-  const [bookingData, setBookingData] = useState(null);
-  const [paymentStatus, setPaymentStatus] = useState("checking");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Load booking data from localStorage
-    const confirmedBooking = localStorage.getItem("bookingData");
-    if (!confirmedBooking) {
-      setLoading(false);
-      return;
-    }
-
-    const parsedBooking = JSON.parse(confirmedBooking);
-    setBookingData(parsedBooking);
-  }, []);
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
-  const formatTime = (timeString) => {
-    if (!timeString) return "";
-
-    const [hours, minutes] = timeString.split(":");
-    const hour = parseInt(hours, 10);
-
-    if (hour === 0) return "12:00 AM";
-    if (hour < 12) return `${hour}:${minutes} AM`;
-    if (hour === 12) return `12:${minutes} PM`;
-    return `${hour - 12}:${minutes} PM`;
-  };
-
-  if (loading) {
-    return <LoadingScreen />;
-  }
-
-  if (!bookingData) {
-    return <NoBookingFound router={router} />;
-  }
-
-  return (
-    <>
-      <Head>
-        <title>Booking Confirmation | Home Services</title>
-        <meta name="description" content="Your booking status" />
-      </Head>
-
-      <div className="min-h-screen bg-gray-50">
-        {/* Top service info banner */}
-        <div className="bg-gradient-to-r from-purple-700 to-purple-900 text-white p-3 text-center">
-          <p className="text-sm">Professional Cleaning Services</p>
-        </div>
-
-        <div className="max-w-3xl mx-auto p-4 md:p-6 lg:p-8">
-          <div className="bg-white rounded-xl shadow-sm p-8 text-center mt-12">
-            <StatusIcon status={paymentStatus} />
-
-            <h1 className="text-3xl font-bold text-gray-900 mb-3">
-              {getStatusTitle(paymentStatus)}
-            </h1>
-            <p className="text-gray-600 mb-8 text-lg">
-              {getStatusMessage(paymentStatus)}
-            </p>
-
-            <BookingDetails
-              bookingData={bookingData}
-              paymentStatus={paymentStatus}
-              formatDate={formatDate}
-              formatTime={formatTime}
-            />
-
-            <ActionButtons paymentStatus={paymentStatus} router={router} />
-          </div>
-        </div>
-
-        {/* Wrap the component that uses searchParams in Suspense */}
-        <Suspense fallback={null}>
-          <BookingVerification
-            bookingData={bookingData}
-            setBookingData={setBookingData}
-            setPaymentStatus={setPaymentStatus}
-            setLoading={setLoading}
-          />
-        </Suspense>
-      </div>
-    </>
-  );
-}
-
-// Don't forget to import useSearchParams in the component that uses it
-import { useSearchParams } from "next/navigation";
 
 // Component for loading screen
 function LoadingScreen() {
@@ -195,6 +99,7 @@ function LoadingScreen() {
     </div>
   );
 }
+
 
 // Component for no booking found
 function NoBookingFound({ router }) {
@@ -422,4 +327,111 @@ function getStatusMessage(status) {
     default:
       return "Your booking has been received but payment status is pending.";
   }
+}
+
+export default function BookingConfirmation() {
+  const router = useRouter();
+  const [bookingData, setBookingData] = useState(null);
+  const [paymentStatus, setPaymentStatus] = useState("checking");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Load booking data from localStorage
+    const loadBookingData = () => {
+      try {
+        const confirmedBooking = localStorage.getItem("bookingData");
+        if (!confirmedBooking) {
+          setLoading(false);
+          return;
+        }
+
+        const parsedBooking = JSON.parse(confirmedBooking);
+        setBookingData(parsedBooking);
+      } catch (error) {
+        console.error("Error loading booking data:", error);
+        setLoading(false);
+      }
+    };
+
+    loadBookingData();
+  }, []);
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const formatTime = (timeString) => {
+    if (!timeString) return "";
+
+    const [hours, minutes] = timeString.split(":");
+    const hour = parseInt(hours, 10);
+
+    if (hour === 0) return "12:00 AM";
+    if (hour < 12) return `${hour}:${minutes} AM`;
+    if (hour === 12) return `12:${minutes} PM`;
+    return `${hour - 12}:${minutes} PM`;
+  };
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  if (!bookingData) {
+    return <NoBookingFound router={router} />;
+  }
+
+  return (
+    <>
+      <Head>
+        <title>Booking Confirmation | Home Services</title>
+        <meta name="description" content="Your booking status" />
+      </Head>
+
+      <div className="min-h-screen bg-gray-50">
+        {/* Top service info banner */}
+        <div className="bg-gradient-to-r from-purple-700 to-purple-900 text-white p-3 text-center">
+          <p className="text-sm">Professional Cleaning Services</p>
+        </div>
+
+        <div className="max-w-3xl mx-auto p-4 md:p-6 lg:p-8">
+          <div className="bg-white rounded-xl shadow-sm p-8 text-center mt-12">
+            <StatusIcon status={paymentStatus} />
+
+            <h1 className="text-3xl font-bold text-gray-900 mb-3">
+              {getStatusTitle(paymentStatus)}
+            </h1>
+            <p className="text-gray-600 mb-8 text-lg">
+              {getStatusMessage(paymentStatus)}
+            </p>
+
+            <BookingDetails
+              bookingData={bookingData}
+              paymentStatus={paymentStatus}
+              formatDate={formatDate}
+              formatTime={formatTime}
+            />
+
+            <ActionButtons paymentStatus={paymentStatus} router={router} />
+          </div>
+        </div>
+
+        {/* Wrap the component that uses searchParams in Suspense */}
+        <Suspense fallback={null}>
+          <BookingVerification
+            bookingData={bookingData}
+            setBookingData={setBookingData}
+            setPaymentStatus={setPaymentStatus}
+            setLoading={setLoading}
+          />
+        </Suspense>
+      </div>
+    </>
+  );
 }
