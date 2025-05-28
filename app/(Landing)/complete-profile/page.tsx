@@ -105,7 +105,7 @@ export default function UserProfileForm() {
       }
 
       // Get the auth token from cookies
-      const authToken = Cookies.get("authToken");
+      const authToken = Cookies.get("auth_token"); // Changed from "authToken" to "auth_token"
 
       if (!authToken) {
         toast.error("Authentication token not found. Please login again.");
