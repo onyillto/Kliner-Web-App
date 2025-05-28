@@ -5,12 +5,12 @@ import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import Cookies from "js-cookie";
 import axios from "axios";
 
 export default function UserProfileForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -22,31 +22,41 @@ export default function UserProfileForm() {
     image: null,
   });
   const [preview, setPreview] = useState(null);
+  const [hasImageChanged, setHasImageChanged] = useState(false);
 
   // Load existing user data from localStorage if available
   useEffect(() => {
     const userData = localStorage.getItem("user_data");
+    console.log("Raw userData from localStorage:", userData); // Debug log
+
     if (userData) {
       try {
         const user = JSON.parse(userData);
+        console.log("Parsed user data:", user); // Debug log
+
         setFormData({
           firstName: user.firstName || "",
           lastName: user.lastName || "",
           username: user.username || "",
           dateOfBirth: user.dateOfBirth || "",
           email: user.email || "",
-          mobile: user.phone || "", // Note: API returns 'phone' but form uses 'mobile'
+          mobile: user.phone || user.mobile || "", // Check both phone and mobile
           address: user.address || "",
           image: null,
         });
 
+        console.log("Set form data with email:", user.email); // Debug log
+
         // Set preview if user has existing profile image
         if (user.profileImage?.url) {
           setPreview(user.profileImage.url);
+          console.log("Set preview image:", user.profileImage.url); // Debug log
         }
       } catch (error) {
         console.error("Error parsing user data from localStorage:", error);
       }
+    } else {
+      console.log("No user data found in localStorage"); // Debug log
     }
   }, []);
 
@@ -60,6 +70,8 @@ export default function UserProfileForm() {
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
+    console.log("Selected file:", file); // Debug log
+
     if (file) {
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
@@ -73,39 +85,25 @@ export default function UserProfileForm() {
         return;
       }
 
+      console.log("File validation passed, setting form data"); // Debug log
       setFormData({ ...formData, image: file });
       setPreview(URL.createObjectURL(file));
+      setHasImageChanged(true);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  // Separate function to save image to /update-profile-image endpoint
+  const handleImageSave = async () => {
+    if (!formData.image) {
+      toast.error("Please select an image first");
+      return;
+    }
+
+    setImageLoading(true);
 
     try {
-      // Create FormData for the API request
-      const formDataToSend = new FormData();
-
-      // Add all text fields (only if they have values)
-      if (formData.firstName)
-        formDataToSend.append("firstName", formData.firstName);
-      if (formData.lastName)
-        formDataToSend.append("lastName", formData.lastName);
-      if (formData.username)
-        formDataToSend.append("username", formData.username);
-      if (formData.dateOfBirth)
-        formDataToSend.append("dateOfBirth", formData.dateOfBirth);
-      if (formData.email) formDataToSend.append("email", formData.email);
-      if (formData.mobile) formDataToSend.append("mobile", formData.mobile);
-      if (formData.address) formDataToSend.append("address", formData.address);
-
-      // Add the image file if it exists
-      if (formData.image instanceof File) {
-        formDataToSend.append("image", formData.image);
-      }
-
-      // Get the auth token from cookies
-      const authToken = Cookies.get("auth_token"); // Changed from "authToken" to "auth_token"
+      // Get token from localStorage
+      const authToken = localStorage.getItem("auth_token");
 
       if (!authToken) {
         toast.error("Authentication token not found. Please login again.");
@@ -113,12 +111,19 @@ export default function UserProfileForm() {
         return;
       }
 
-      // Make the API request using token-based authentication (no user_id needed)
-      const response = await axios.post(
+      const imageFormData = new FormData();
+      imageFormData.append("image", formData.image);
+
+      // Debug logging
+      console.log("Uploading image:", formData.image);
+      console.log("FormData entries:", [...imageFormData.entries()]);
+      console.log("Auth token:", authToken ? "Token found" : "No token");
+
+      const response = await axios.put(
         `${
           process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002"
-        }/api/v1/user/fill-data`,
-        formDataToSend,
+        }/api/v1/user/update-profile-image`,
+        imageFormData,
         {
           headers: {
             "Content-Type": "multipart/form-data",
@@ -128,7 +133,90 @@ export default function UserProfileForm() {
       );
 
       if (response.data.success) {
-        toast.success("Profile updated successfully!");
+        toast.success("Profile image uploaded successfully!");
+        setHasImageChanged(false);
+
+        // Update user data in localStorage with the new image
+        const currentUserData = JSON.parse(
+          localStorage.getItem("user_data") || "{}"
+        );
+        const updatedUserData = {
+          ...currentUserData,
+          profileImage: response.data.data.profileImage,
+        };
+        localStorage.setItem("user_data", JSON.stringify(updatedUserData));
+
+        // Update preview with the new URL from server
+        if (response.data.data.imageUrl) {
+          setPreview(response.data.data.imageUrl);
+        }
+      } else {
+        toast.error(response.data.message || "Failed to upload image");
+      }
+    } catch (err) {
+      console.error("Error uploading image:", err);
+      console.error("Error response:", err.response?.data);
+
+      if (err.response?.status === 401) {
+        toast.error("Authentication failed. Please login again.");
+        localStorage.removeItem("auth_token");
+        router.push("/auth/signin");
+      } else if (err.response?.status === 500) {
+        toast.error("Server error. Please check your backend logs.");
+      } else {
+        const errorMessage =
+          err.response?.data?.message ||
+          err.message ||
+          "Failed to upload image. Please try again.";
+        toast.error(errorMessage);
+      }
+    } finally {
+      setImageLoading(false);
+    }
+  };
+
+  // Handle form submission for fill-data endpoint
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Get token from localStorage
+      const authToken = localStorage.getItem("auth_token");
+
+      if (!authToken) {
+        toast.error("Authentication token not found. Please login again.");
+        router.push("/auth/signin");
+        return;
+      }
+
+      // Prepare JSON data for fill-data endpoint (POST /api/v1/user/fill-data)
+      const dataToSend = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        username: formData.username,
+        mobile: formData.mobile,
+        address: formData.address,
+      };
+
+      console.log("Sending fill-data:", dataToSend); // Debug log
+
+      // Make the API request to fill-data endpoint using token-based authentication
+      const response = await axios.post(
+        `${
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002"
+        }/api/v1/user/fill-data`,
+        dataToSend,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        toast.success("Profile data updated successfully!");
 
         // Update user data in localStorage with the new information
         const currentUserData = JSON.parse(
@@ -144,15 +232,13 @@ export default function UserProfileForm() {
       }
     } catch (err) {
       console.error("Error updating profile:", err);
+      console.error("Error response:", err.response?.data);
 
       // Handle different error types
       if (err.response?.status === 401) {
         toast.error("Authentication failed. Please login again.");
-        Cookies.remove("authToken");
-        Cookies.remove("userData");
+        localStorage.removeItem("auth_token");
         router.push("/auth/signin");
-      } else if (err.response?.status === 413) {
-        toast.error("File too large. Please choose a smaller image.");
       } else {
         const errorMessage =
           err.response?.data?.message ||
@@ -198,13 +284,29 @@ export default function UserProfileForm() {
               accept="image/*"
               className="hidden"
               onChange={handleImageUpload}
-              disabled={loading}
+              disabled={loading || imageLoading}
             />
             <div className="absolute bottom-0 right-0 bg-purple-600 text-white p-1 rounded-full">
               ✎
             </div>
           </label>
           <p className="text-xs text-gray-500 mt-2">Max size: 5MB</p>
+
+          {/* Save Image Button - Always visible when image is selected */}
+          {formData.image && (
+            <button
+              type="button"
+              onClick={handleImageSave}
+              disabled={imageLoading}
+              className={`mt-2 px-4 py-1 text-sm rounded-md transition duration-200 ${
+                imageLoading
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              } text-white`}
+            >
+              {imageLoading ? "Uploading..." : "Save Image"}
+            </button>
+          )}
         </div>
 
         {/* Form Fields */}
@@ -286,7 +388,7 @@ export default function UserProfileForm() {
             className="w-full text-black p-2 border rounded-md focus:ring focus:ring-purple-300 disabled:opacity-50"
           />
 
-          {/* Submit Button */}
+          {/* Submit Button for Fill Data */}
           <button
             type="submit"
             disabled={loading}
@@ -294,7 +396,7 @@ export default function UserProfileForm() {
               loading ? "opacity-70 cursor-not-allowed" : "hover:bg-purple-700"
             }`}
           >
-            {loading ? "Updating..." : "Complete Profile"}
+            {loading ? "Updating Profile..." : "Save Profile Data"}
           </button>
         </form>
       </div>
