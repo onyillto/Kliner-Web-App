@@ -5,6 +5,7 @@ import { FaFacebook, FaGoogle } from "react-icons/fa";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "react-hot-toast";
 import AuthService from "../../../../services/authService";
 
 export default function SignUpPage() {
@@ -17,7 +18,6 @@ export default function SignUpPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
 
   const router = useRouter();
@@ -33,16 +33,15 @@ export default function SignUpPage() {
 
   const handleSignUp = async (e) => {
     e.preventDefault();
-    setError("");
 
     // Validate form
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+      toast.error("Passwords do not match");
       return;
     }
 
     if (!agreeTerms) {
-      setError("You must agree to Terms of Service and Privacy Policy");
+      toast.error("You must agree to Terms of Service and Privacy Policy");
       return;
     }
 
@@ -60,20 +59,28 @@ export default function SignUpPage() {
         if (typeof window !== "undefined") {
           localStorage.setItem("verification_email", formData.email);
         }
+
+        toast.success(
+          "Account created successfully! Please verify your email.",
+          {
+            duration: 4000,
+          }
+        );
+
         router.push("/auth/verify-otp");
       } else {
-        setError(
+        const errorMessage =
           response.error ||
-            response.message ||
-            "Registration failed. Please try again."
-        );
+          response.message ||
+          "Registration failed. Please try again.";
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error("Registration error:", error);
-      setError(
+      const errorMessage =
         error.message ||
-          "An error occurred during registration. Please try again."
-      );
+        "An error occurred during registration. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -139,6 +146,7 @@ export default function SignUpPage() {
               className="w-[90%] max-w-[440px] sm:w-[80%] md:w-[440px] h-12 sm:h-[52px] bg-white py-1 sm:py-2 rounded flex items-center justify-center mx-auto"
               style={{ border: "1px solid black" }}
               disabled={isLoading}
+              onClick={() => toast.error("Social login coming soon!")}
             >
               <FaFacebook className="mr-2" style={{ color: "#1877F2" }} />
               <span className="text-[#1E1E1EB2]">Sign up with Facebook</span>
@@ -148,6 +156,7 @@ export default function SignUpPage() {
               className="w-[90%] max-w-[440px] sm:w-[80%] md:w-[440px] h-12 sm:h-[52px] bg-white py-1 sm:py-2 rounded flex items-center justify-center mx-auto"
               style={{ border: "1px solid black" }}
               disabled={isLoading}
+              onClick={() => toast.error("Social login coming soon!")}
             >
               <FaGoogle className="mr-2" style={{ color: "#DB4437" }} />
               <span className="text-[#1E1E1EB2]">Sign up with Google</span>
@@ -161,12 +170,6 @@ export default function SignUpPage() {
             </p>
             <div className="w-16 sm:w-[108px] border-t border-black"></div>
           </div>
-
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 w-[90%] max-w-[440px] mx-auto">
-              <span className="block sm:inline">{error}</span>
-            </div>
-          )}
 
           <form onSubmit={handleSignUp}>
             <div className="space-y-3 sm:space-y-4">

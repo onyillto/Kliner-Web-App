@@ -70,7 +70,7 @@ const UserProfile = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 ">
       {/* Import BottomNavigation component which includes the sidebar */}
       <BottomNavigation />
 

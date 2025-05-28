@@ -3,8 +3,12 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AuthService from "./../services/authService";
-import { isAuthenticated, getCurrentUser } from "../utils/tokenService";
-import API from "../utils/httpClient"; // Make sure to import API
+import {
+  isAuthenticated,
+  getCurrentUser,
+  TokenService,
+  fetchUserData,
+} from "../utils/tokenService";
 
 const AuthContext = createContext();
 
@@ -13,37 +17,23 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Fetch user data function
-  const fetchUserData = async (userId) => {
-    try {
-      const response = await API.get(`/api/v1/user/${userId}`);
-      return response;
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-      return null;
-    }
-  };
-
   // Check if user is authenticated on mount
-  // In your AuthContext.js, modify the useEffect
-
   useEffect(() => {
     const initAuth = async () => {
       setLoading(true);
 
       if (typeof window !== "undefined") {
         if (isAuthenticated()) {
-          const basicUserData = getCurrentUser();
+          // Fetch fresh user data from server using token
+          const userData = await fetchUserData();
 
-          // Format user data to include a name property
-          const formattedUserData = {
-            ...basicUserData,
-            name: basicUserData.firstName || "Guest",
-          };
-
-          setUser(formattedUserData);
-
-          // Rest of your code for fetching additional user data...
+          if (userData && userData.success) {
+            setUser(userData.data);
+          } else {
+            // If fetch fails, clear invalid token and logout
+            TokenService.clearAll();
+            setUser(null);
+          }
         }
         setLoading(false);
       }
@@ -52,21 +42,16 @@ export function AuthProvider({ children }) {
     initAuth();
   }, []);
 
-  // Define the login function properly
+  // Define the login function
   const loginUser = async (email, password) => {
     try {
       const response = await AuthService.login(email, password);
 
       if (response.success) {
-        const currentUser = getCurrentUser();
-        setUser(currentUser);
-
-        // Also fetch complete user data after login
-        if (currentUser && currentUser.id) {
-          const userData = await fetchUserData(currentUser.id);
-          if (userData) {
-            setUser((prev) => ({ ...prev, ...userData }));
-          }
+        // Fetch complete user data after login using the new endpoint
+        const userData = await fetchUserData();
+        if (userData && userData.success) {
+          setUser(userData.data);
         }
 
         return { success: true };
@@ -98,18 +83,30 @@ export function AuthProvider({ children }) {
   const logoutUser = () => {
     AuthService.logout();
     setUser(null);
-    router.push("/auth/sigin");
+    router.push("/auth/signin"); // Fixed typo: sigin -> signin
   };
 
-  // Context values with correctly named functions
+  // Refresh user data function
+  const refreshUserData = async () => {
+    if (isAuthenticated()) {
+      const userData = await fetchUserData();
+      if (userData && userData.success) {
+        setUser(userData.data);
+        return userData.data;
+      }
+    }
+    return null;
+  };
+
+  // Context values
   const values = {
     user,
     loading,
     login: loginUser,
     register: registerUser,
     logout: logoutUser,
+    refreshUserData, // Updated function name
     isAuthenticated: () => isAuthenticated(),
-    fetchUserData, // Add this to allow components to refresh user data if needed
   };
 
   return <AuthContext.Provider value={values}>{children}</AuthContext.Provider>;

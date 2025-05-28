@@ -65,7 +65,7 @@ const handleLogin = async (e) => {
       if (isProfileComplete) {
         router.push("/");
       } else {
-        router.push("/complete-data");
+        router.push("/complete-profile");
       }
     } else {
       setError(
