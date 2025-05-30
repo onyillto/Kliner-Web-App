@@ -6,6 +6,7 @@ import "react-phone-input-2/lib/style.css";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import axios from "axios";
+import Cookies from "js-cookie";
 
 export default function UserProfileForm() {
   const router = useRouter();
@@ -19,10 +20,114 @@ export default function UserProfileForm() {
     email: "",
     mobile: "",
     address: "",
+    city: "",
+    state: "",
     image: null,
   });
   const [preview, setPreview] = useState(null);
   const [hasImageChanged, setHasImageChanged] = useState(false);
+
+  // Nigerian states list
+  const nigerianStates = [
+    "Abia",
+    "Adamawa",
+    "Akwa Ibom",
+    "Anambra",
+    "Bauchi",
+    "Bayelsa",
+    "Benue",
+    "Borno",
+    "Cross River",
+    "Delta",
+    "Ebonyi",
+    "Edo",
+    "Ekiti",
+    "Enugu",
+    "FCT",
+    "Gombe",
+    "Imo",
+    "Jigawa",
+    "Kaduna",
+    "Kano",
+    "Katsina",
+    "Kebbi",
+    "Kogi",
+    "Kwara",
+    "Lagos",
+    "Nasarawa",
+    "Niger",
+    "Ogun",
+    "Ondo",
+    "Osun",
+    "Oyo",
+    "Plateau",
+    "Rivers",
+    "Sokoto",
+    "Taraba",
+    "Yobe",
+    "Zamfara",
+  ];
+
+  // Major Nigerian cities (you can expand this list)
+  const nigerianCities = [
+    "Lagos",
+    "Abuja",
+    "Kano",
+    "Ibadan",
+    "Port Harcourt",
+    "Benin City",
+    "Kaduna",
+    "Jos",
+    "Ilorin",
+    "Aba",
+    "Onitsha",
+    "Warri",
+    "Sokoto",
+    "Calabar",
+    "Uyo",
+    "Akure",
+    "Enugu",
+    "Abeokuta",
+    "Maiduguri",
+    "Zaria",
+    "Owerri",
+    "Bauchi",
+    "Gombe",
+    "Yola",
+    "Lokoja",
+    "Lafia",
+    "Osogbo",
+    "Ado-Ekiti",
+    "Awka",
+    "Abakaliki",
+    "Asaba",
+    "Jalingo",
+    "Gusau",
+    "Damaturu",
+    "Minna",
+    "Birnin Kebbi",
+    "Dutse",
+    "Makurdi",
+    "Yenagoa",
+  ];
+
+  // Helper function to get auth token from cookies
+  const getAuthToken = () => {
+    const token = Cookies.get("auth_token");
+    console.log("Token from cookie:", token ? "Token found" : "No token");
+    return token;
+  };
+
+  // Helper function to check authentication and redirect if needed
+  const checkAuthentication = () => {
+    const token = getAuthToken();
+    if (!token) {
+      toast.error("Authentication token not found. Please login again.");
+      router.push("/auth/signin");
+      return false;
+    }
+    return true;
+  };
 
   // Load existing user data from localStorage if available
   useEffect(() => {
@@ -42,6 +147,8 @@ export default function UserProfileForm() {
           email: user.email || "",
           mobile: user.phone || user.mobile || "", // Check both phone and mobile
           address: user.address || "",
+          city: user.city || "",
+          state: user.state || "",
           image: null,
         });
 
@@ -99,25 +206,21 @@ export default function UserProfileForm() {
       return;
     }
 
+    // Check authentication before proceeding
+    if (!checkAuthentication()) {
+      return;
+    }
+
     setImageLoading(true);
 
     try {
-      // Get token from localStorage
-      const authToken = localStorage.getItem("auth_token");
-
-      if (!authToken) {
-        toast.error("Authentication token not found. Please login again.");
-        router.push("/auth/signin");
-        return;
-      }
-
+      const authToken = getAuthToken();
       const imageFormData = new FormData();
       imageFormData.append("image", formData.image);
 
       // Debug logging
       console.log("Uploading image:", formData.image);
       console.log("FormData entries:", [...imageFormData.entries()]);
-      console.log("Auth token:", authToken ? "Token found" : "No token");
 
       const response = await axios.put(
         `${
@@ -159,7 +262,7 @@ export default function UserProfileForm() {
 
       if (err.response?.status === 401) {
         toast.error("Authentication failed. Please login again.");
-        localStorage.removeItem("auth_token");
+        Cookies.remove("auth_token"); // Remove invalid token from cookies
         router.push("/auth/signin");
       } else if (err.response?.status === 500) {
         toast.error("Server error. Please check your backend logs.");
@@ -178,17 +281,16 @@ export default function UserProfileForm() {
   // Handle form submission for fill-data endpoint
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Check authentication before proceeding
+    if (!checkAuthentication()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Get token from localStorage
-      const authToken = localStorage.getItem("auth_token");
-
-      if (!authToken) {
-        toast.error("Authentication token not found. Please login again.");
-        router.push("/auth/signin");
-        return;
-      }
+      const authToken = getAuthToken();
 
       // Prepare JSON data for fill-data endpoint (POST /api/v1/user/fill-data)
       const dataToSend = {
@@ -197,6 +299,8 @@ export default function UserProfileForm() {
         username: formData.username,
         mobile: formData.mobile,
         address: formData.address,
+        city: formData.city,
+        state: formData.state,
       };
 
       console.log("Sending fill-data:", dataToSend); // Debug log
@@ -226,7 +330,7 @@ export default function UserProfileForm() {
         localStorage.setItem("user_data", JSON.stringify(updatedUserData));
 
         // Redirect to dashboard
-        router.push("/dashboard");
+        router.push("/");
       } else {
         toast.error(response.data.message || "Failed to update profile");
       }
@@ -237,7 +341,7 @@ export default function UserProfileForm() {
       // Handle different error types
       if (err.response?.status === 401) {
         toast.error("Authentication failed. Please login again.");
-        localStorage.removeItem("auth_token");
+        Cookies.remove("auth_token"); // Remove invalid token from cookies
         router.push("/auth/signin");
       } else {
         const errorMessage =
@@ -387,6 +491,58 @@ export default function UserProfileForm() {
             disabled={loading}
             className="w-full text-black p-2 border rounded-md focus:ring focus:ring-purple-300 disabled:opacity-50"
           />
+
+          {/* City and State Row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="relative">
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                placeholder="Enter your city"
+                disabled={loading}
+                list="cities-list"
+                className="w-full p-2 text-black border rounded-md focus:ring focus:ring-purple-300 disabled:opacity-50"
+              />
+              <datalist id="cities-list">
+                {nigerianCities.map((city) => (
+                  <option key={city} value={city} />
+                ))}
+              </datalist>
+            </div>
+
+            <div className="relative">
+              <select
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                disabled={loading}
+                className="w-full p-2 text-black border rounded-md focus:ring focus:ring-purple-300 disabled:opacity-50 appearance-none bg-white"
+              >
+                <option value="">Select State</option>
+                {nigerianStates.map((state) => (
+                  <option key={state} value={state}>
+                    {state}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <svg
+                  className="h-5 w-5 text-gray-400"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
 
           {/* Submit Button for Fill Data */}
           <button

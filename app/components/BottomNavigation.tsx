@@ -1,4 +1,13 @@
+"use client";
+import { useAuth } from "../../context/AuthContext";
+
 export default function BottomNavigation() {
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+  };
+
   return (
     <>
       {/* Mobile Bottom Navigation - Icons Only */}
@@ -21,7 +30,7 @@ export default function BottomNavigation() {
         </a>
 
         <a
-          href="/bookings/bookings"
+          href="/booking/bookings"
           className="flex flex-col items-center text-gray-400"
         >
           <svg
@@ -59,10 +68,7 @@ export default function BottomNavigation() {
           </svg>
         </a>
 
-        <a
-          href="/booking/user-chat"
-          className="flex flex-col items-center text-gray-400"
-        >
+        <a href="/profile" className="flex flex-col items-center text-gray-400">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -189,9 +195,9 @@ export default function BottomNavigation() {
           </nav>
 
           <div className="mt-auto mb-8 w-full px-4">
-            <a
-              href="profile"
-              className="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-500"
+            <button
+              onClick={handleLogout}
+              className="flex items-center p-2 rounded-lg hover:bg-red-50 text-red-500 w-full transition-colors duration-200"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -204,11 +210,12 @@ export default function BottomNavigation() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
               </svg>
-              <span className="ml-3">Settings</span>
-            </a>
+              <span className="ml-3">Logout</span>
+            </button>
           </div>
         </div>
       </div>

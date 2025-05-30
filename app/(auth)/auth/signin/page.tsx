@@ -4,6 +4,7 @@ import { FaFacebook, FaGoogle } from "react-icons/fa";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import toast, { Toaster } from "react-hot-toast";
 import AuthService from "../../../../services/authService";
 
 export default function LoginPage() {
@@ -14,7 +15,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const router = useRouter();
 
@@ -35,80 +35,107 @@ export default function LoginPage() {
     }));
   };
 
-const handleLogin = async (e) => {
-  e.preventDefault();
-  setError("");
-  setIsLoading(true);
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
 
-  try {
-    const response = await AuthService.login(formData.email, formData.password);
-
-    if (response.success && response.data) {
-      // Extract token and user data
-      const { token, ...userData } = response.data;
-
-      // Set token in cookie
-      const cookieExpiry = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60;
-      document.cookie = `auth_token=${token}; max-age=${cookieExpiry}; path=/; ${
-        process.env.NODE_ENV !== "development" ? "secure; " : ""
-      }samesite=strict`;
-
-      // Store user data in localStorage
-      if (typeof window !== "undefined") {
-        localStorage.setItem("user_data", JSON.stringify(userData));
-      }
-
-      // Check if all required user data fields are filled
-      const isProfileComplete = checkProfileCompleteness(userData);
-
-      // Navigate based on profile completeness
-      if (isProfileComplete) {
-        router.push("/");
-      } else {
-        router.push("/complete-profile");
-      }
-    } else {
-      setError(
-        response.error ||
-          response.message ||
-          "Login failed. Please check your credentials."
+    try {
+      const response = await AuthService.login(
+        formData.email,
+        formData.password
       );
+
+      if (response.success && response.data) {
+        // Extract token and user data
+        const { token, ...userData } = response.data;
+
+        // Set token in cookie
+        const cookieExpiry = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60;
+        document.cookie = `auth_token=${token}; max-age=${cookieExpiry}; path=/; ${
+          process.env.NODE_ENV !== "development" ? "secure; " : ""
+        }samesite=strict`;
+
+        // Store user data in localStorage
+        if (typeof window !== "undefined") {
+          localStorage.setItem("user_data", JSON.stringify(userData));
+        }
+
+        // Show success toast
+        toast.success("Login successful! Welcome back.", {
+          duration: 3000,
+          position: "top-right",
+        });
+
+        // Check if all required user data fields are filled
+        const isProfileComplete = checkProfileCompleteness(userData);
+
+        // Navigate based on profile completeness
+        if (isProfileComplete) {
+          router.push("/");
+        } else {
+          router.push("/complete-profile");
+        }
+      } else {
+        const errorMessage =
+          response.error ||
+          response.message ||
+          "Login failed. Please check your credentials.";
+        toast.error(errorMessage, {
+          duration: 4000,
+          position: "top-right",
+        });
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+
+      // Handle different types of errors
+      let errorMessage = "An error occurred during login. Please try again.";
+
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+
+      toast.error(errorMessage, {
+        duration: 4000,
+        position: "top-right",
+      });
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error) {
-    console.error("Login error:", error);
-    setError(
-      error.message || "An error occurred during login. Please try again."
-    );
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
-// Helper function to check if all required profile fields are filled
-const checkProfileCompleteness = (userData) => {
-  // Define required fields
-  const requiredFields = [
-    "user_id",
-    "firstName",
-    "lastName",
-    "email",
-    "phone",
-    "address",
-    "username",
-  ];
+  // Helper function to check if all required profile fields are filled
+  const checkProfileCompleteness = (userData) => {
+    // Define required fields
+    const requiredFields = [
+      "user_id",
+      "firstName",
+      "lastName",
+      "email",
+      "phone",
+      "address",
+      "username",
+    ];
 
-  // Check if all required fields exist and have values
-  return requiredFields.every((field) => {
-    return (
-      userData[field] !== undefined &&
-      userData[field] !== null &&
-      userData[field] !== ""
-    );
-  });
-};
+    // Check if all required fields exist and have values
+    return requiredFields.every((field) => {
+      return (
+        userData[field] !== undefined &&
+        userData[field] !== null &&
+        userData[field] !== ""
+      );
+    });
+  };
 
   return (
     <div className="flex h-[100vh] w-screen">
+      {/* Toast Container */}
+      <Toaster />
+
       {/* Left Side - Image Slider */}
       <div
         className="hidden lg:flex w-1/2 h-screen bg-cover bg-center items-end justify-center relative transition-all duration-1000"
@@ -159,12 +186,6 @@ const checkProfileCompleteness = (userData) => {
           <p className="text-sm sm:text-base text-center mb-4 text-[#373737B2]">
             Continue with Facebook or enter your account
           </p>
-
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 w-[90%] max-w-[440px] mx-auto">
-              <span className="block sm:inline">{error}</span>
-            </div>
-          )}
 
           <div className="space-y-2">
             <button
