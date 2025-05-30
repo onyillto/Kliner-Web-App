@@ -14,7 +14,7 @@ export default function HouseCleaningPage() {
     Bedroom: 0,
     Bathroom: 0,
     Kitchen: 0,
-    "Dining Room": 0,
+    Dining : 0,
     Garage: 0,
   });
   const [totalItems, setTotalItems] = useState(0);
