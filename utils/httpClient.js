@@ -50,7 +50,7 @@ httpClient.interceptors.response.use(
 
       // Redirect to login page if we're in the browser context
       if (typeof window !== "undefined") {
-        window.location.href = "/auth/siginn";
+        window.location.href = "/auth/signin";
       }
 
       return Promise.reject(error);
